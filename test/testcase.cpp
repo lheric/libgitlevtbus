@@ -26,6 +26,37 @@ public:
 };
 
 
+class NestEventTestModual : public GitlModual
+{
+public:
+    NestEventTestModual()
+    {
+        this->m_bOuter = false;
+        this->m_bInner = false;
+        subscribeToEvtByName("OUTER_EVENT_1");
+        subscribeToEvtByName("INNER_EVENT_1");
+    }
+
+    virtual bool detonate( GitlEvent cEvt )
+    {
+        if(cEvt.getEvtName() == "OUTER_EVENT_1")
+        {
+            this->m_bOuter = true;
+            GitlEvent cNestEvt; cNestEvt.setEvtName("INNER_EVENT_1");
+            dispatchEvt(cNestEvt);
+        }
+        if(cEvt.getEvtName() == "INNER_EVENT_1")
+        {
+            this->m_bInner = true;
+        }
+        return true;
+    }
+
+    ADD_CLASS_FIELD_NOSETTER(bool, bOuter, getOuter)
+    ADD_CLASS_FIELD_NOSETTER(bool, bInner, getInner)
+};
+
+
 /// test case
 class TestCase : public QObject
 {
@@ -84,6 +115,16 @@ private slots:
         cSender.dispatchEvt(cEvt);
         QVERIFY(cListener3.getNotified());
 
+    }
+
+    void nestedEvent()
+    {
+        TestModual cSender;
+        NestEventTestModual cListener;
+        GitlEvent cEvt("OUTER_EVENT_1");
+        cSender.dispatchEvt(cEvt);
+        QVERIFY(cListener.getOuter());
+        QVERIFY(cListener.getInner());
     }
 
 

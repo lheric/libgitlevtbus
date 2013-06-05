@@ -23,9 +23,9 @@ bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
 
 /*! send event to event bus
   */
-void GitlEventBus::post(GitlEvent* pcEvt)
+void GitlEventBus::post(const GitlEvent* pcEvt)
 {
-    QMutexLocker cModualLocker(&m_cModualDispMutex);
+    //QMutexLocker cModualLocker(&m_cModualDispMutex);
     /// notify moduals
     emit eventTriggered(*pcEvt);
 

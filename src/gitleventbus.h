@@ -20,18 +20,25 @@ private:
     GitlEventBus();
 
 public:
-    /*! connect a modual to the event bus
-      */
+    /*!
+     * \brief registerModual connect a modual to the event bus
+     * \param pcModual pointer to the modual
+     * \return
+     */
     bool registerModual(GitlModualDelegate *pcModual);
 
 
 public slots:
-    /*! send event to event bus
-      */
-    void post(GitlEvent* pcEvt);
+    /*!
+     * \brief post send event to event bus
+     * \param pcEvt pointer to the event
+     */
+    void post(const GitlEvent *pcEvt);
 
 signals:
-    /*! message to send
+    /*!
+     * \brief eventTriggered message to send
+     * \param pcEvt
      */
     void eventTriggered(GitlEvent pcEvt);
 
