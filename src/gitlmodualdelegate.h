@@ -3,7 +3,8 @@
 
 #include <QObject>
 #include <QVector>
-#include <QReadWriteLock>
+#include <QMutex>
+#include <QMutexLocker>
 #include "gitldef.h"
 #include "gitlevent.h"
 
@@ -34,7 +35,7 @@ public:
      * \brief dispatchEvt dispatch an event to subscribers
      * \param pcEvt event
      */
-    void dispatchEvt( const GitlEvent* pcEvt );
+    void dispatchEvt( GitlEvent* pcEvt );
 
 public slots:
     /*!
@@ -50,8 +51,8 @@ protected:
     ADD_CLASS_FIELD( QString, strModualName, getModualName, setModualName )
     ADD_CLASS_FIELD_PRIVATE( QVector<QString>, cListeningEvts )
     ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
-    ADD_CLASS_FIELD_PRIVATE( GitlModual*, pcDelegator)
-    ADD_CLASS_FIELD_PRIVATE( QReadWriteLock, cModualMutex )
+    ADD_CLASS_FIELD_PRIVATE(GitlModual*, pcDelegator)
+    ADD_CLASS_FIELD_PRIVATE( QMutex, cModualMutex )
     
 };
 

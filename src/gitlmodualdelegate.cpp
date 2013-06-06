@@ -2,11 +2,7 @@
 #include "gitleventbus.h"
 #include <QDebug>
 #include <iostream>
-#include <QReadLocker>
-#include <QWriteLocker>
-
 using namespace std;
-
 GitlModualDelegate::GitlModualDelegate(GitlModual *pcDelegator)
 {
     m_pcDelegator = pcDelegator;
@@ -20,7 +16,6 @@ GitlModualDelegate::GitlModualDelegate(GitlModual *pcDelegator)
 
 void GitlModualDelegate::subscribeToEvtByName( const QString& strEvtName )
 {
-    QWriteLocker clocker(&m_cModualMutex);
     m_cListeningEvts.push_back(strEvtName);
     return;
 }
@@ -28,7 +23,6 @@ void GitlModualDelegate::subscribeToEvtByName( const QString& strEvtName )
 
 void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 {
-    QWriteLocker clocker(&m_cModualMutex);
     for(int i = 0; i < m_cListeningEvts.size(); i++)
     {
         if(m_cListeningEvts.at(i) == strEvtName)
@@ -43,7 +37,7 @@ void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 
 bool GitlModualDelegate::detonate(GitlEvent cEvt )
 {
-
+    QMutexLocker locker(&m_cModualMutex);
     if( xIsListenToEvt(cEvt.getEvtName()) == true )
         this->m_pcDelegator->detonate(cEvt);
     return true;
@@ -51,7 +45,6 @@ bool GitlModualDelegate::detonate(GitlEvent cEvt )
 
 bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
 {
-    QReadLocker clocker(&m_cModualMutex);
 
     for(int iEvtIdx = 0; iEvtIdx < m_cListeningEvts.size(); iEvtIdx++ )
     {
@@ -63,7 +56,7 @@ bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
     return false;
 }
 
-void GitlModualDelegate::dispatchEvt(const GitlEvent *pcEvt )
+void GitlModualDelegate::dispatchEvt( GitlEvent* pcEvt )
 {
     m_pcGitlEvtBus->post(pcEvt);
 }

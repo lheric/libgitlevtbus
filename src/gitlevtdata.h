@@ -11,12 +11,6 @@ class GitlEvtData
 
 public:
     GitlEvtData();
-
-    /*!
-     * \brief hasParameter has parameter 'strParam' or not
-     * \param strParam
-     * \return
-     */
     bool hasParameter(QString strParam) const;
     QVariant getParameter(const QString& strParam ) const;
     bool setParameter(const QString& strParam, const QVariant& rvValue);
