@@ -1,10 +1,10 @@
 #ifndef GITLEVENT_H
 #define GITLEVENT_H
 #include <QString>
-#include <QObject>
-#include <QMetaType>
+#include <QMap>
+#include <QVariant>
 #include "gitldef.h"
-#include "gitlevtdata.h"
+
 
 class GitlModual;
 
@@ -14,8 +14,16 @@ public:
     GitlEvent( const QString& strEvtName );
     GitlEvent();
 
+    bool hasParameter(QString strParam) const;
+    QVariant getParameter(const QString& strParam ) const;
+    bool setParameter(const QString& strParam, const QVariant& rvValue);
+
+
+
+protected:
+    QMap<QString,QVariant> m_cParameters;
     ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)
-    ADD_CLASS_FIELD_NOSETTER(GitlEvtData, cEvtData, getEvtData)
+
 };
 
 

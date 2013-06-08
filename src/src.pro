@@ -22,7 +22,6 @@ TEMPLATE = lib
 SOURCES += \
     gitlevent.cpp \
     gitleventbus.cpp \
-    gitlevtdata.cpp \
     gitlmodualdelegate.cpp \
     gitlmodual.cpp
 
@@ -31,5 +30,4 @@ HEADERS += \
     gitlevent.h \
     gitleventbus.h \
     gitlmodual.h \
-    gitlevtdata.h \
     gitlmodualdelegate.h
