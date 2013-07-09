@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSharedPointer>
 #include "GitlDef.h"
 #include "gitlevent.h"
 #include "gitlmodual.h"
@@ -28,12 +29,12 @@ public:
 public slots:
     /*! send event to event bus
       */
-    void post(GitlEvent* pcEvt);
+    void post(QSharedPointer<GitlEvent> pcEvt);
 
 signals:
     /*! message to send
      */
-    void eventTriggered(GitlEvent pcEvt);
+    void eventTriggered(QSharedPointer<GitlEvent> pcEvt);
 
 private:
 

@@ -35,17 +35,16 @@ void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
     return;
 }
 
-bool GitlModualDelegate::detonate(GitlEvent cEvt )
+bool GitlModualDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
 {
     QMutexLocker locker(&m_cModualMutex);
-    if( xIsListenToEvt(cEvt.getEvtName()) == true )
-        this->m_pcDelegator->detonate(cEvt);
+    if( xIsListenToEvt(pcEvt->getEvtName()) == true )
+        this->m_pcDelegator->detonate(pcEvt);
     return true;
 }
 
 bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
 {
-
     for(int iEvtIdx = 0; iEvtIdx < m_cListeningEvts.size(); iEvtIdx++ )
     {
         if( strEvtName == m_cListeningEvts.at(iEvtIdx) )
@@ -56,7 +55,7 @@ bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
     return false;
 }
 
-void GitlModualDelegate::dispatchEvt( GitlEvent* pcEvt )
+void GitlModualDelegate::dispatchEvt( QSharedPointer<GitlEvent> pcEvt )
 {
     m_pcGitlEvtBus->post(pcEvt);
 }

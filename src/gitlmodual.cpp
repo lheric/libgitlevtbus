@@ -1,6 +1,6 @@
 #include "gitlmodual.h"
 #include "gitleventbus.h"
-
+#include <QDebug>
 
 GitlModual::GitlModual() :
     m_cDelegate(this)
@@ -17,9 +17,9 @@ void GitlModual::unsubscribeToEvtByName( const QString& strEvtName )
     return m_cDelegate.unsubscribeToEvtByName(strEvtName);
 }
 
-void GitlModual::dispatchEvt( GitlEvent& pcEvt )
+void GitlModual::dispatchEvt(QSharedPointer<GitlEvent> pcEvt )
 {
-    m_cDelegate.dispatchEvt(&pcEvt);
+    m_cDelegate.dispatchEvt(pcEvt);
 }
 
 void GitlModual::setModualName( QString strModualName )

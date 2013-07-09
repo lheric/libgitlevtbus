@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSharedPointer>
 #include "gitldef.h"
 #include "gitlevent.h"
 
@@ -35,7 +36,7 @@ public:
      * \brief dispatchEvt dispatch an event to subscribers
      * \param pcEvt event
      */
-    void dispatchEvt( GitlEvent* pcEvt );
+    void dispatchEvt( QSharedPointer<GitlEvent> pcEvt );
 
 public slots:
     /*!
@@ -43,7 +44,7 @@ public slots:
      * \param cEvt
      * \return
      */
-    bool detonate( GitlEvent cEvt );
+    bool detonate( QSharedPointer<GitlEvent> pcEvt );
 
 protected:
     bool xIsListenToEvt( const QString& strEvtName );
