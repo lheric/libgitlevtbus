@@ -9,10 +9,11 @@ GitlEventBus::GitlEventBus()
 
 /*! connect a modual to the event bus
   */
+Q_DECLARE_METATYPE( QSharedPointer<GitlEvent> )
 bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
 {
     QMutexLocker cModualLocker(&m_cModualQueMutex);
-    qRegisterMetaType< QSharedPointer<GitlEvent> >("GitlEvent");
+    qRegisterMetaType< QSharedPointer<GitlEvent> >("QSharedPointer<GitlEvent>");
     connect(this,     SIGNAL(eventTriggered(QSharedPointer<GitlEvent>) ),
             pcModual, SLOT  (detonate      (QSharedPointer<GitlEvent>) ),
             Qt::AutoConnection );
