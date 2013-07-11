@@ -18,10 +18,10 @@ public:
     GitlModual();
     /*! The virtual function to deal with specific event
       */
-    virtual bool detonate( QSharedPointer<GitlEvent> ) {return true;}
+    virtual bool detonate( GitlEvent& ) {return true;}
     void subscribeToEvtByName( const QString& strEvtName );
     void unsubscribeToEvtByName( const QString& strEvtName );
-    void dispatchEvt( QSharedPointer<GitlEvent> pcEvt );
+    void dispatchEvt(GitlEvent &rcEvt );
     void setModualName(QString strModualName );
 
     ADD_CLASS_FIELD_PRIVATE( GitlModualDelegate, cDelegate )

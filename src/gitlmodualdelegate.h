@@ -36,7 +36,7 @@ public:
      * \brief dispatchEvt dispatch an event to subscribers
      * \param pcEvt event
      */
-    void dispatchEvt( QSharedPointer<GitlEvent> pcEvt );
+    void dispatchEvt(GitlEvent &rcEvt  );
 
 public slots:
     /*!

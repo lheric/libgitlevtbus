@@ -35,6 +35,11 @@
     classname* classname::m_instance = NULL; \
     QMutex classname::m_cGetInstanceMutex;
 
+/// VIRTUAL COPY PATTERN
+#define VIRTUAL_COPY_PATTERN(classname)\
+    public:\
+        virtual classname* clone() const { return new classname(*this); }
+
 
 /// CLIP c BETWEEN a AND b
 #define VALUE_CLIP(a,b,c) ( ((c)>(b))?((c)=(b)):((c)<(a))?((c)=(a)):(c) )
