@@ -29,12 +29,12 @@ public:
 public slots:
     /*! send event to event bus
       */
-    void post(QSharedPointer<GitlEvent> pcEvt);
+    void post(GitlEvent &rcEvt);
 
 signals:
     /*! message to send
      */
-    void eventTriggered(QSharedPointer<GitlEvent> pcEvt);
+    void eventTriggered( QSharedPointer<GitlEvent> pcEvt );
 
 private:
 

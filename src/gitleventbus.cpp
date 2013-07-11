@@ -24,11 +24,14 @@ bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
 
 /*! send event to event bus
   */
-void GitlEventBus::post(QSharedPointer<GitlEvent> pcEvt)
+void GitlEventBus::post(GitlEvent& rcEvt)
 {
     QMutexLocker cModualLocker(&m_cModualDispMutex);
+    QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
+
+
     /// notify moduals
-    emit eventTriggered(pcEvt);
+    emit eventTriggered(pcEvtCopy);
 
 }
 

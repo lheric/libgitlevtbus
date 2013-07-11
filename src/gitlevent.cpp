@@ -1,7 +1,8 @@
 #include "gitlevent.h"
 #include "gitlmodual.h"
 #include <QDebug>
-
+#include "gitleventbus.h"
+#include <QSharedPointer>
 GitlEvent::GitlEvent( const QString& strEvtName )
 {
     this->m_strEvtName = strEvtName;
@@ -36,4 +37,9 @@ bool GitlEvent::setParameter(const QString& strParam, const QVariant& rvValue)
 {
     m_cParameters[strParam] = rvValue;
     return true;
+}
+
+void GitlEvent::dispatch()
+{
+    GitlEventBus::getInstance()->post(*this);
 }

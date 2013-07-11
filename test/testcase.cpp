@@ -18,7 +18,7 @@ public:
         this->m_bNotified = false;
     }
 
-    virtual bool detonate( QSharedPointer<GitlEvent> pcEvt )
+    virtual bool detonate( GitlEvent& rcEvt)
     {
         this->m_bNotified = true;
         return true;
@@ -31,6 +31,7 @@ public:
 /// custom event
 class CustomEvent : public GitlEvent
 {
+    VIRTUAL_COPY_PATTERN(CustomEvent)
 public:
     CustomEvent( const QString& strEvtName ) : GitlEvent(strEvtName) { m_strCustomVar = "Custom String"; }
     ADD_CLASS_FIELD(QString, strCustomVar, getCustomVar, setCustomVar)
@@ -44,11 +45,11 @@ public:
         this->m_bNotified = false;
     }
 
-    virtual bool detonate( QSharedPointer<GitlEvent> pcEvt )
+    virtual bool detonate( GitlEvent& rcEvt)
     {
-        QSharedPointer<CustomEvent> pcCusEvt = pcEvt.staticCast<CustomEvent>();
+        CustomEvent& pcCusEvt = static_cast<CustomEvent&>(rcEvt);
         this->m_bNotified = true;
-        this->m_strCustomVar = pcCusEvt->getCustomVar();
+        this->m_strCustomVar = pcCusEvt.getCustomVar();
         return true;
     }
 
@@ -70,7 +71,7 @@ private slots:
         TestModual cSender;
         TestModual cListener;
         cListener.subscribeToEvtByName("TEST_EVENT_1");
-        QSharedPointer<GitlEvent> pcEvt ( new GitlEvent("TEST_EVENT_1"));
+        GitlEvent pcEvt("TEST_EVENT_1");
         cSender.dispatchEvt(pcEvt);
         QVERIFY(cListener.getNotified());
     }
@@ -79,8 +80,8 @@ private slots:
     {
         TestModual cSender;
         cSender.subscribeToEvtByName("TEST_EVENT_1");
-        QSharedPointer<GitlEvent> pcEvt ( new GitlEvent("TEST_EVENT_1") );
-        cSender.dispatchEvt(pcEvt);
+        GitlEvent cEvt("TEST_EVENT_1");
+        cSender.dispatchEvt(cEvt);
         QVERIFY(cSender.getNotified());
     }
 
@@ -89,8 +90,8 @@ private slots:
         TestModual cSender;
         cSender.subscribeToEvtByName("TEST_EVENT_1");
         cSender.unsubscribeToEvtByName("TEST_EVENT_1");
-        QSharedPointer<GitlEvent> pcEvt ( new GitlEvent("TEST_EVENT_1") );
-        cSender.dispatchEvt(pcEvt);
+        GitlEvent cEvt("TEST_EVENT_1");
+        cSender.dispatchEvt(cEvt);
         QVERIFY(!cSender.getNotified());
     }
 
@@ -106,14 +107,14 @@ private slots:
         cListener2.subscribeToEvtByName("TEST_EVENT_1");
         cListener3.subscribeToEvtByName("TEST_EVENT_2");
 
-        QSharedPointer<GitlEvent> pcEvt1 ( new GitlEvent("TEST_EVENT_1") );
-        cSender.dispatchEvt(pcEvt1);
+        GitlEvent cEvt1("TEST_EVENT_1");
+        cSender.dispatchEvt(cEvt1);
         QVERIFY(cListener1.getNotified());
         QVERIFY(cListener2.getNotified());
         QVERIFY(!cListener3.getNotified());
 
-        QSharedPointer<GitlEvent> pcEvt2 ( new GitlEvent("TEST_EVENT_2") );
-        cSender.dispatchEvt(pcEvt2);
+        GitlEvent cEvt2("TEST_EVENT_2");
+        cSender.dispatchEvt(cEvt2);
         QVERIFY(cListener3.getNotified());
 
     }
@@ -123,10 +124,20 @@ private slots:
         TestModual cSender;
         CustomEventListener cListener;
         cListener.subscribeToEvtByName("TEST_EVENT_1");
-        QSharedPointer<GitlEvent> pcEvt ( new CustomEvent("TEST_EVENT_1"));
-        cSender.dispatchEvt(pcEvt);
+        CustomEvent cEvt("TEST_EVENT_1");
+        cSender.dispatchEvt(cEvt);
         QVERIFY(cListener.getNotified());
         QVERIFY(cListener.getCustomVar() == QString("Custom String"));
+    }
+
+
+    void selfDispatchTest()
+    {
+        CustomEventListener cListener;
+        cListener.subscribeToEvtByName("TEST_EVENT_1");
+        CustomEvent("TEST_EVENT_1").dispatch();
+        QVERIFY(cListener.getNotified());
+        QVERIFY(cListener.getCustomVar() == QString("Custom String"));        
     }
 
 

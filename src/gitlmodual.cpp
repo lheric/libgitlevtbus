@@ -17,9 +17,9 @@ void GitlModual::unsubscribeToEvtByName( const QString& strEvtName )
     return m_cDelegate.unsubscribeToEvtByName(strEvtName);
 }
 
-void GitlModual::dispatchEvt(QSharedPointer<GitlEvent> pcEvt )
+void GitlModual::dispatchEvt( GitlEvent& rcEvt )
 {
-    m_cDelegate.dispatchEvt(pcEvt);
+    m_cDelegate.dispatchEvt(rcEvt);
 }
 
 void GitlModual::setModualName( QString strModualName )
