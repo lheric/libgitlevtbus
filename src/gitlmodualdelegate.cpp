@@ -37,7 +37,6 @@ void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 
 bool GitlModualDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
 {
-    QMutexLocker locker(&m_cModualMutex);
     if( xIsListenToEvt(pcEvt->getEvtName()) == true )
         this->m_pcDelegator->detonate(*pcEvt.data());
     return true;

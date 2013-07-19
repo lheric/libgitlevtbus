@@ -53,7 +53,7 @@ protected:
     ADD_CLASS_FIELD_PRIVATE( QVector<QString>, cListeningEvts )
     ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
     ADD_CLASS_FIELD_PRIVATE(GitlModual*, pcDelegator)
-    ADD_CLASS_FIELD_PRIVATE( QMutex, cModualMutex )
+    //ADD_CLASS_FIELD_PRIVATE( QMutex, cModualMutex )
     
 };
 

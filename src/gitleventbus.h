@@ -39,8 +39,6 @@ signals:
 private:
 
     ADD_CLASS_FIELD_PRIVATE( QList<GitlModual*>, cModuals )
-    ADD_CLASS_FIELD_PRIVATE( QMutex, cModualQueMutex )
-    ADD_CLASS_FIELD_PRIVATE( QMutex, cModualDispMutex )
 
     ///SINGLETON
     SINGLETON_PATTERN_DECLARE(GitlEventBus)

@@ -11,8 +11,7 @@ GitlEventBus::GitlEventBus()
   */
 Q_DECLARE_METATYPE( QSharedPointer<GitlEvent> )
 bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
-{
-    QMutexLocker cModualLocker(&m_cModualQueMutex);
+{    
     qRegisterMetaType< QSharedPointer<GitlEvent> >("QSharedPointer<GitlEvent>");
     connect(this,     SIGNAL(eventTriggered(QSharedPointer<GitlEvent>) ),
             pcModual, SLOT  (detonate      (QSharedPointer<GitlEvent>) ),
@@ -26,8 +25,7 @@ bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
 /*! send event to event bus
   */
 void GitlEventBus::post(GitlEvent& rcEvt)
-{
-    QMutexLocker cModualLocker(&m_cModualDispMutex);
+{    
     QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
 
 
