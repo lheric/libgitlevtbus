@@ -37,18 +37,51 @@
 
 class GitlEventBus;
 
+/*!
+ * \brief The GitlModual class represents a modual
+ */
+
 class GitlModual
 {
 public:
     GitlModual();
-    /*! The virtual function to deal with specific event
-      */
+
+    /*!
+     * \brief detonate
+     * The virtual function to deal with specific event. Once an subscribed event is dispatched,
+     * this method will be called.
+     * \return RESERVED
+     */
     virtual bool detonate( GitlEvent& ) {return true;}
+
+    /*!
+     * \brief subscribeToEvtByName Subscribe to an event
+     * \param strEvtName event name
+     */
     void subscribeToEvtByName( const QString& strEvtName );
+
+    /*!
+     * \brief unsubscribeToEvtByName Unsubscribe to an event
+     * \param strEvtName event name
+     */
     void unsubscribeToEvtByName( const QString& strEvtName );
+
+    /*!
+     * \brief dispatchEvt Dispatch an event
+     * \param rcEvt event
+     */
     void dispatchEvt(GitlEvent &rcEvt );
+
+    /*!
+     * \brief setModualName Set the name of this modual. That's ok if you do not
+     * give a name to this modual. But for better debugging, we recommend you name it.
+     * \param strModualName name for this modual
+     */
     void setModualName(QString strModualName );
 
+    /// Delegate pattern
+    /// Avoiding this class becoming a subclass of QObject
+    /// (GUI class is based on QOBject, but QObject doesn't support virtual inheritance).
     ADD_CLASS_FIELD_PRIVATE( GitlModualDelegate, cDelegate )
 };
 

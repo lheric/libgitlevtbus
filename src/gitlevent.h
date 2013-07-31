@@ -34,6 +34,13 @@
 
 class GitlModual;
 
+/*!
+ * \brief The GitlEvent class represents an event.
+ *  If you want to create an custom event by inherit GitlEvent, you ***MUST***
+ *  reimplement the 'clone' method in this class. This can be done by adding
+ *  VIRTUAL_COPY_PATTERN(subclassname) in the subclass. Otherwise the application
+ *  may crash
+ */
 class GitlEvent
 {
     /// virtual copy pattern, please add this macro to all the subclass
@@ -44,16 +51,39 @@ public:
     GitlEvent();
     virtual ~GitlEvent() {}
 
+    /*!
+     * \brief hasParameter if this event carries a specific parameter
+     * \param strParam parameter name
+     * \return
+     */
     bool hasParameter(QString strParam) const;
+
+    /*!
+     * \brief getParameter get the value of a specific parameter
+     * \param strParam parameter name
+     * \return parameter value, if it does not exist, return a default-constructed QVariant
+     */
     QVariant getParameter(const QString& strParam ) const;
+
+    /*!
+     * \brief setParameter set the value of a  specific parameter
+     * \param strParam parameter name
+     * \param rvValue parameter value
+     * \return
+     */
     bool setParameter(const QString& strParam, const QVariant& rvValue);
+
+
+    /*!
+     * \brief dispatch dispatch this event to event bus, all modual subscribed to this event name will be notified.
+     */
     void dispatch();
 
-protected:
-    QMap<QString,QVariant> m_cParameters;
-    ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)
+protected:    
 
+    ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)    ///< event name
 
+    QMap<QString,QVariant> m_cParameters;                           ///< event parameters-value pair
 
 };
 

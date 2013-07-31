@@ -37,8 +37,9 @@
 
 
 class GitlModualDelegate;
-
-using namespace std;
+/*!
+ * \brief The GitlEventBus class represents the event bus
+ */
 class GitlEventBus : public QObject
 {
     Q_OBJECT
@@ -61,11 +62,8 @@ signals:
      */
     void eventTriggered( QSharedPointer<GitlEvent> pcEvt );
 
-private:
 
-    ADD_CLASS_FIELD_PRIVATE( QList<GitlModual*>, cModuals )
-
-    ///SINGLETON
+    ///SINGLETON design pattern
     SINGLETON_PATTERN_DECLARE(GitlEventBus)
 
 };

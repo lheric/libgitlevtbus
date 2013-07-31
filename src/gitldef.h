@@ -29,7 +29,7 @@
 #include <QMutexLocker>
 
 
-/// AUTO GETTER AND SETTER FOR CLASS FIELDS
+/*! getter and setter generator for class memeber */
 #define ADD_CLASS_FIELD(type, name, getter, setter) \
     public: \
         type& getter() { return m_##name; } \
@@ -48,7 +48,7 @@
         type m_##name;
 
 
-/// SINGLETON DESIGN PATTERN (Thread Safe)
+/*!  SINGLETON DESIGN PATTERN (Thread Safe) */
 #define SINGLETON_PATTERN_DECLARE(classname)\
     public: \
         static classname* getInstance() { QMutexLocker cLocker(&m_cGetInstanceMutex); if(m_instance==NULL) m_instance=new classname(); return m_instance; } \
@@ -60,17 +60,13 @@
     classname* classname::m_instance = NULL; \
     QMutex classname::m_cGetInstanceMutex;
 
-/// VIRTUAL COPY PATTERN
+/*!  VIRTUAL COPY PATTERN */
 #define VIRTUAL_COPY_PATTERN(classname)\
     public:\
         virtual classname* clone() const { return new classname(*this); }
 
 
-/// CLIP c BETWEEN a AND b
+/* CLIP c BETWEEN a AND b */
 #define VALUE_CLIP(min,max,value) ( ((value)>(max))?(max):((value)<(min))?(min):(value) )
-
-
-
-
 
 #endif
