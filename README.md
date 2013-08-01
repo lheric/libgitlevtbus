@@ -11,7 +11,7 @@ Complie
 =======
 Qt 5.0.1 or later with MSVC, gcc or intel complier
 
-Quick started
+Quick start
 ===========
 See examples/examples.pro
 ```
