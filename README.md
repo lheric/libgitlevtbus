@@ -1,4 +1,4 @@
-libgitlevtbus
+Introduction
 =============
 libgitlevtbus is an open-sourced event bus based on Qt under BSD lisence.
 
