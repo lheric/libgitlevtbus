@@ -6,6 +6,7 @@ Features
 ========
 1. Easy to use
 2. Custom event support
+3. Events can be deliverd across threads
 
 Complie
 =======
