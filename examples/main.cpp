@@ -53,5 +53,7 @@ int main(int argc, char *argv[])
     GitlEvent cEvent("I am a test event");              ///< create an event
     cEvent.dispatch();                                  ///< dispatch
 
-    ///< output: "I got notified!"
+    /// output: "I got notified!"
+
+    return 0;
 }
