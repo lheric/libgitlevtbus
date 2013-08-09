@@ -28,6 +28,8 @@
 #include <QMutex>
 #include <QMutexLocker>
 
+/*! concatenating multiple args into one*/
+#define CONCATE(...) __VA_ARGS__
 
 /*! getter and setter generator for class memeber */
 #define ADD_CLASS_FIELD(type, name, getter, setter) \
