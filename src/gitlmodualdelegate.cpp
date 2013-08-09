@@ -41,23 +41,14 @@ GitlModualDelegate::GitlModualDelegate(GitlModual *pcDelegator)
 
 void GitlModualDelegate::subscribeToEvtByName( const QString& strEvtName )
 {
-    m_cListeningEvts.push_back(strEvtName);
+    m_cListeningEvts.insert(strEvtName);
     return;
 }
 
 
 void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 {
-    for(int i = 0; i < m_cListeningEvts.size(); i++)
-    {
-        if(m_cListeningEvts.at(i) == strEvtName)
-        {
-            m_cListeningEvts.remove(i);
-            return;
-        }
-    }
-
-    return;
+    m_cListeningEvts.remove(strEvtName);
 }
 
 bool GitlModualDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
@@ -69,14 +60,7 @@ bool GitlModualDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
 
 bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
 {
-    for(int iEvtIdx = 0; iEvtIdx < m_cListeningEvts.size(); iEvtIdx++ )
-    {
-        if( strEvtName == m_cListeningEvts.at(iEvtIdx) )
-        {
-            return true;
-        }
-    }
-    return false;
+    return m_cListeningEvts.contains(strEvtName);
 }
 
 void GitlModualDelegate::dispatchEvt( GitlEvent& rcEvt )

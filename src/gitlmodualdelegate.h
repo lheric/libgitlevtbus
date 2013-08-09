@@ -27,7 +27,7 @@
 #define GITLMODUALDELEGATE_H
 
 #include <QObject>
-#include <QVector>
+#include <QSet>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSharedPointer>
@@ -75,7 +75,7 @@ protected:
     bool xIsListenToEvt( const QString& strEvtName );
 
     ADD_CLASS_FIELD( QString, strModualName, getModualName, setModualName )
-    ADD_CLASS_FIELD_PRIVATE( QVector<QString>, cListeningEvts )
+    ADD_CLASS_FIELD_PRIVATE( QSet<QString>, cListeningEvts )
     ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
     ADD_CLASS_FIELD_PRIVATE(GitlModual*, pcDelegator)
     
