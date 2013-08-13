@@ -1,6 +1,7 @@
 Introduction
 =============
-[![Build Status](https://travis-ci.org/lheric/libgitlevtbus.png?branch=master)]
+![Build Status](https://travis-ci.org/lheric/libgitlevtbus.png?branch=master)
+
 libgitlevtbus is an open-sourced event bus (or message bus) based on C++ Qt under BSD lisence.
 
 Features
