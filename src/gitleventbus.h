@@ -31,7 +31,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSharedPointer>
-#include "GitlDef.h"
+#include "gitldef.h"
 #include "gitlevent.h"
 #include "gitlmodual.h"
 
