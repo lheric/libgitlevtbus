@@ -23,11 +23,13 @@ SOURCES += \
     gitlevent.cpp \
     gitleventbus.cpp \
     gitlmodualdelegate.cpp \
-    gitlmodual.cpp
+    gitlmodual.cpp \
+    gitleventparam.cpp
 
 HEADERS += \
     gitldef.h \
     gitlevent.h \
     gitleventbus.h \
     gitlmodual.h \
-    gitlmodualdelegate.h
+    gitlmodualdelegate.h \
+    gitleventparam.h

@@ -28,9 +28,8 @@
 #include <QString>
 #include <QMap>
 #include <QVariant>
-#include <QSharedPointer>
 #include "gitldef.h"
-
+#include "gitleventparam.h"
 
 class GitlModual;
 
@@ -81,9 +80,9 @@ public:
 
 protected:    
 
-    ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)    ///< event name
+    ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)            ///< event name
 
-    QMap<QString,QVariant> m_cParameters;                           ///< event parameters-value pair
+    ADD_CLASS_FIELD_NOSETTER(GitlEventParam, cParameters, getParameters)    ///< event parameters-value pair
 
 };
 
