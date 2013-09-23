@@ -7,17 +7,21 @@
 QT       += core
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-#QT       += gui
 Debug:   TARGET = GitlEvtBusd
 Release: TARGET = GitlEvtBus
 
 DESTDIR = $${OUT_PWD}/..
 
-CONFIG   += console
-CONFIG   -= app_bundle
+# c++11 enalbed
+CONFIG += c++11
+QMAKE_CXXFLAGS = -std=c++11 -stdlib=libc++ -mmacosx-version-min=10.7
+QMAKE_LFLAGS =   -std=c++11 -stdlib=libc++ -mmacosx-version-min=10.7
+
+CONFIG += console
 CONFIG += staticlib
+CONFIG -= app_bundle
+
 TEMPLATE = lib
-#TEMPLATE = app
 
 SOURCES += \
     gitlevent.cpp \

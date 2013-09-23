@@ -71,4 +71,17 @@
 /* CLIP c BETWEEN a AND b */
 #define VALUE_CLIP(min,max,value) ( ((value)>(max))?(max):((value)<(min))?(min):(value) )
 
+/* SCOPE GUARD C++11 Required*/
+template <typename F>
+struct ScopeExit {
+    ScopeExit(F f) : f(f) {}
+    ~ScopeExit() { f(); }
+    F f;
+};
+template <typename F>
+ScopeExit<F> MakeScopeExit(F f) {
+    return ScopeExit<F>(f);
+}
+#define SCOPE_EXIT(code) \
+    auto scope_exit_##__LINE__ = MakeScopeExit([=](){code;})
 #endif
