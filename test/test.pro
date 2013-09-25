@@ -21,5 +21,5 @@ SOURCES += \
 
 LIBS += -L$${OUT_PWD}/..
 
-Debug:   LIBS += -lGitlEvtBusd
-Release: LIBS += -lGitlEvtBus
+debug:   LIBS += -lGitlEvtBusd
+release: LIBS += -lGitlEvtBus
