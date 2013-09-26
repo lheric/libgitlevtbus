@@ -7,8 +7,12 @@
 QT       += core
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-debug:   TARGET = GitlEvtBusd
-release: TARGET = GitlEvtBus
+CONFIG(debug, debug|release){
+    TARGET = GitlEvtBusd
+}
+CONFIG(release, debug|release){
+    TARGET = GitlEvtBus
+}
 
 DESTDIR = $${OUT_PWD}/..
 
