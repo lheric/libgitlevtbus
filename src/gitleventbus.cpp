@@ -49,7 +49,7 @@ bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
 
 /*! send event to event bus
   */
-void GitlEventBus::post(GitlEvent& rcEvt)
+void GitlEventBus::post(const GitlEvent& rcEvt) const
 {    
     QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
 

@@ -25,6 +25,7 @@
  *******************************************************************************************/
 #ifndef GITLDEF_H
 #define GITLDEF_H
+#include <functional>
 #include <QMutex>
 #include <QMutexLocker>
 
@@ -84,4 +85,15 @@ ScopeExit<F> MakeScopeExit(F f) {
 }
 #define SCOPE_EXIT(code) \
     auto scope_exit_##__LINE__ = MakeScopeExit([=](){code;})
+
+
+/*make callback functor*/
+#define MAKE_CALLBACK(memberFunc) \
+    std::bind( &memberFunc, this, std::placeholders::_1 )
+
+#define MAKE_CALLBACK_OBJ(object, memberFunc) \
+    std::bind( &memberFunc, &(object), std::placeholders::_1 )
+
+
+
 #endif

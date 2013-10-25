@@ -32,9 +32,10 @@ GitlModual::GitlModual() :
 {    
 }
 
-void GitlModual::subscribeToEvtByName( const QString& strEvtName )
+void GitlModual::subscribeToEvtByName( const QString& strEvtName,
+                                       const GitlCallBack& pfListener )
 {
-    return m_cDelegate.subscribeToEvtByName(strEvtName);
+    return m_cDelegate.subscribeToEvtByName(strEvtName, pfListener);
 }
 
 void GitlModual::unsubscribeToEvtByName( const QString& strEvtName )

@@ -76,7 +76,7 @@ public:
     /*!
      * \brief dispatch dispatch this event to event bus, all modual subscribed to this event name will be notified.
      */
-    void dispatch();
+    void dispatch() const;
 
 protected:    
 

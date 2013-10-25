@@ -39,9 +39,9 @@ GitlModualDelegate::GitlModualDelegate(GitlModual *pcDelegator)
 
 
 
-void GitlModualDelegate::subscribeToEvtByName( const QString& strEvtName )
+void GitlModualDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCallBack pfListener )
 {
-    m_cListeningEvts.insert(strEvtName);
+    m_cListeningEvts.insert(strEvtName, pfListener);
     return;
 }
 
@@ -53,8 +53,11 @@ void GitlModualDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 
 bool GitlModualDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
 {
-    if( xIsListenToEvt(pcEvt->getEvtName()) == true )
-        this->m_pcDelegator->detonate(*pcEvt.data());
+    QMap<QString, std::function<bool (GitlEvent&)>>::iterator p =
+            m_cListeningEvts.find(pcEvt->getEvtName());
+
+    if( p != m_cListeningEvts.end() )
+        (p.value())(*pcEvt.data());
     return true;
 }
 
@@ -63,7 +66,7 @@ bool GitlModualDelegate::xIsListenToEvt( const QString& strEvtName )
     return m_cListeningEvts.contains(strEvtName);
 }
 
-void GitlModualDelegate::dispatchEvt( GitlEvent& rcEvt )
+void GitlModualDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
 {
     m_pcGitlEvtBus->post(rcEvt);
 }

@@ -27,15 +27,21 @@
 #define GITLMODUALDELEGATE_H
 
 #include <QObject>
-#include <QSet>
+#include <QMap>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSharedPointer>
+#include <functional>
 #include "gitldef.h"
 #include "gitlevent.h"
 
 class GitlModual;
 class GitlEventBus;
+
+///
+/// \brief GitlCallBack gitl event callback function
+///
+typedef std::function<bool (GitlEvent&)> GitlCallBack;
 
 class GitlModualDelegate : public QObject
 {
@@ -49,7 +55,8 @@ public:
      * \brief subscribeToEvtByName listening to an event by name
      * \param strEvtName event name
      */
-    void subscribeToEvtByName( const QString& strEvtName );
+    void subscribeToEvtByName( const QString& strEvtName,
+                               GitlCallBack pfListener );
 
     /*!
      * \brief subscribeToEvtByName not listening to an event by name
@@ -61,7 +68,7 @@ public:
      * \brief dispatchEvt dispatch an event to subscribers
      * \param pcEvt event
      */
-    void dispatchEvt(GitlEvent &rcEvt  );
+    void dispatchEvt(const GitlEvent &rcEvt  ) const;
 
 public slots:
     /*!
@@ -72,10 +79,10 @@ public slots:
     bool detonate( QSharedPointer<GitlEvent> pcEvt );
 
 protected:
-    bool xIsListenToEvt( const QString& strEvtName );
+    bool xIsListenToEvt(const QString& strEvtName);
 
     ADD_CLASS_FIELD( QString, strModualName, getModualName, setModualName )
-    ADD_CLASS_FIELD_PRIVATE( QSet<QString>, cListeningEvts )
+    ADD_CLASS_FIELD_PRIVATE( CONCATE(QMap<QString, GitlCallBack>), cListeningEvts )
     ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
     ADD_CLASS_FIELD_PRIVATE(GitlModual*, pcDelegator)
     

@@ -47,18 +47,12 @@ public:
     GitlModual();
 
     /*!
-     * \brief detonate
-     * The virtual function to deal with specific event. Once an subscribed event is dispatched,
-     * this method will be called.
-     * \return RESERVED
-     */
-    virtual bool detonate( GitlEvent& ) {return true;}
-
-    /*!
      * \brief subscribeToEvtByName Subscribe to an event
      * \param strEvtName event name
+     * \param pfListener listener callback function
      */
-    void subscribeToEvtByName( const QString& strEvtName );
+    void subscribeToEvtByName(const QString& strEvtName,
+                              const GitlCallBack& pfListener  );
 
     /*!
      * \brief unsubscribeToEvtByName Unsubscribe to an event

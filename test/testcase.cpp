@@ -29,6 +29,7 @@
 #include <QTest>
 #include <QSharedPointer>
 #include <QString>
+#include <functional>
 #include "gitldef.h"
 #include "gitlmodual.h"
 #include "gitleventbus.h"
@@ -41,15 +42,24 @@ public:
     TestModual()
     {
         this->m_bNotified = false;
+
     }
 
-    virtual bool detonate( GitlEvent& rcEvt)
+    void subscribeInsideClass()
+    {
+        subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK(TestModual::callback));
+    }
+
+    bool callback( GitlEvent& rcEvt)
     {
         this->m_bNotified = true;
         return true;
     }
 
-    ADD_CLASS_FIELD_NOSETTER(bool, bNotified, getNotified)
+
+
+
+    ADD_CLASS_FIELD(bool, bNotified, getNotified, setNotified)
 };
 
 
@@ -70,7 +80,7 @@ public:
         this->m_bNotified = false;
     }
 
-    virtual bool detonate( GitlEvent& rcEvt)
+    bool callback( GitlEvent& rcEvt)
     {
         CustomEvent& pcCusEvt = static_cast<CustomEvent&>(rcEvt);
         this->m_bNotified = true;
@@ -78,7 +88,9 @@ public:
         return true;
     }
 
-    ADD_CLASS_FIELD_NOSETTER(bool, bNotified, getNotified)
+
+
+    ADD_CLASS_FIELD(bool, bNotified, getNotified, setNotified)
     ADD_CLASS_FIELD(QString, strCustomVar, getCustomVar, setCustomVar)
 };
 
@@ -90,34 +102,51 @@ class TestCase : public QObject
     Q_OBJECT
 
 private slots:
-    void oneSendAnotherListen()
+    void lamdaListening()
     {
-
-        TestModual cSender;
-        TestModual cListener;
-        cListener.subscribeToEvtByName("TEST_EVENT_1");
-        GitlEvent pcEvt("TEST_EVENT_1");
-        cSender.dispatchEvt(pcEvt);
-        QVERIFY(cListener.getNotified());
+        TestModual cModual;
+        cModual.subscribeToEvtByName("TEST_EVENT_1",
+         [&](GitlEvent& e)->bool
+         {
+            cModual.setNotified(true);
+            return true;
+         });
+        QVERIFY(!cModual.getNotified());
+        GitlEvent cEvt("TEST_EVENT_1");
+        cModual.dispatchEvt(cEvt);
+        QVERIFY(cModual.getNotified());
     }
 
-    void selfSendAndListen()
+
+    void listenInsideClass()
     {
-        TestModual cSender;
-        cSender.subscribeToEvtByName("TEST_EVENT_1");
+        TestModual cModual;
+        cModual.subscribeInsideClass();
+        QVERIFY(!cModual.getNotified());
         GitlEvent cEvt("TEST_EVENT_1");
-        cSender.dispatchEvt(cEvt);
-        QVERIFY(cSender.getNotified());
+        cEvt.dispatch();
+        QVERIFY(cModual.getNotified());
+    }
+
+    void listenOutsideClass()
+    {
+        TestModual cModual;
+        cModual.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModual, TestModual::callback));
+        QVERIFY(!cModual.getNotified());
+        GitlEvent cEvt("TEST_EVENT_1");
+        cModual.dispatchEvt(cEvt);
+        QVERIFY(cModual.getNotified());
     }
 
     void unsubscribe()
     {
-        TestModual cSender;
-        cSender.subscribeToEvtByName("TEST_EVENT_1");
-        cSender.unsubscribeToEvtByName("TEST_EVENT_1");
+        TestModual cModual;
+        cModual.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModual, TestModual::callback));
+        cModual.unsubscribeToEvtByName("TEST_EVENT_1");
+        QVERIFY(!cModual.getNotified());
         GitlEvent cEvt("TEST_EVENT_1");
-        cSender.dispatchEvt(cEvt);
-        QVERIFY(!cSender.getNotified());
+        cModual.dispatchEvt(cEvt);
+        QVERIFY(!cModual.getNotified());
     }
 
 
@@ -125,47 +154,34 @@ private slots:
     void oneToMany()
     {
         TestModual cSender;
-        TestModual cListener1;
-        TestModual cListener2;
-        TestModual cListener3;
-        cListener1.subscribeToEvtByName("TEST_EVENT_1");
-        cListener2.subscribeToEvtByName("TEST_EVENT_1");
-        cListener3.subscribeToEvtByName("TEST_EVENT_2");
+        TestModual cModual1;
+        TestModual cModual2;
+        TestModual cModual3;
+        cModual1.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModual1, TestModual::callback));
+        cModual2.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModual2, TestModual::callback));
+        cModual3.subscribeToEvtByName("TEST_EVENT_2", MAKE_CALLBACK_OBJ(cModual3, TestModual::callback));
 
         GitlEvent cEvt1("TEST_EVENT_1");
         cSender.dispatchEvt(cEvt1);
-        QVERIFY(cListener1.getNotified());
-        QVERIFY(cListener2.getNotified());
-        QVERIFY(!cListener3.getNotified());
+        QVERIFY(cModual1.getNotified());
+        QVERIFY(cModual2.getNotified());
+        QVERIFY(!cModual3.getNotified());
 
         GitlEvent cEvt2("TEST_EVENT_2");
         cSender.dispatchEvt(cEvt2);
-        QVERIFY(cListener3.getNotified());
+        QVERIFY(cModual3.getNotified());
 
     }
 
     void customEventTest()
     {
-        TestModual cSender;
-        CustomEventListener cListener;
-        cListener.subscribeToEvtByName("TEST_EVENT_1");
+        CustomEventListener cModual;
+        cModual.subscribeToEvtByName("TEST_EVENT_1",MAKE_CALLBACK_OBJ(cModual, CustomEventListener::callback));
         CustomEvent cEvt("TEST_EVENT_1");
-        cSender.dispatchEvt(cEvt);
-        QVERIFY(cListener.getNotified());
-        QVERIFY(cListener.getCustomVar() == QString("Custom String"));
+        cEvt.dispatch();
+        QVERIFY(cModual.getNotified());
+        QVERIFY(cModual.getCustomVar() == QString("Custom String"));
     }
-
-
-    void selfDispatchTest()
-    {
-        CustomEventListener cListener;
-        cListener.subscribeToEvtByName("TEST_EVENT_1");
-        CustomEvent("TEST_EVENT_1").dispatch();
-        QVERIFY(cListener.getNotified());
-        QVERIFY(cListener.getCustomVar() == QString("Custom String"));        
-    }
-
-
 };
 
 

@@ -55,12 +55,12 @@ public:
 public slots:
     /*! send event to event bus
       */
-    void post(GitlEvent &rcEvt);
+    void post(const GitlEvent &rcEvt) const;
 
 signals:
     /*! message to send
      */
-    void eventTriggered( QSharedPointer<GitlEvent> pcEvt );
+    void eventTriggered( QSharedPointer<GitlEvent> pcEvt ) const;
 
 
     ///SINGLETON design pattern
