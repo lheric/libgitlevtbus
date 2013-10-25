@@ -2,22 +2,23 @@ Introduction
 =============
 [![Build Status](https://travis-ci.org/lheric/libgitlevtbus.png?branch=master)](https://travis-ci.org/lheric/libgitlevtbus)
 
-libgitlevtbus is an open-sourced event bus (or message bus) based on C++ Qt under BSD lisence.
+libgitlevtbus is an open-source event bus (or message bus) based on Qt under BSD lisence.
 
 Features
 ========
-1. Easy to use
-2. Custom event support
+1. Easy to use (c++11 feature supported: lambda expression, member function callback, ...)
+2. Custom event support (carry custom arguments)
 3. Events can be deliverd across threads
 
-Complie
-=======
-Qt 5.0.1 or later with MSVC, gcc or intel complier
+Requirements
+============
+Qt 5.1.0 or later with MSVC, gcc or intel complier
+**c++11 supported required**
 
 Quick start
 ===========
 See examples/examples.pro
-```
+```c++
 #include "gitlmodual.h"
 #include <QDebug>
 
