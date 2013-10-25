@@ -24,13 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
 #include "gitlmodual.h"
-#include "gitleventbus.h"
 #include <QDebug>
-
-using namespace std;
-using namespace std::placeholders;
-
-
 
 int main(int argc, char *argv[])
 {
@@ -44,7 +38,6 @@ int main(int argc, char *argv[])
         return true;
     }
     );
-
 
     GitlEvent cEvent("I am a test event");              ///< create an event
     cEvent.dispatch();                                  ///< dispatch
