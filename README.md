@@ -13,7 +13,8 @@ Features
 Requirements
 ============
 Qt 5.1.0 or later with MSVC, gcc or intel complier
-**c++11 supported required**
+
+**c++11 support required**
 
 Quick start
 ===========
