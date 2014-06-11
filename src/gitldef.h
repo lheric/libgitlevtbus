@@ -63,8 +63,8 @@
     classname* classname::m_instance = NULL; \
     QMutex classname::m_cGetInstanceMutex;
 
-/*!  VIRTUAL COPY PATTERN */
-#define VIRTUAL_COPY_PATTERN(classname)\
+/*! PROTOTYPE PATTERN */
+#define CLONABLE(classname)\
     public:\
         virtual classname* clone() const { return new classname(*this); }
 

@@ -66,7 +66,7 @@ public:
 /// custom event
 class CustomEvent : public GitlEvent
 {
-    VIRTUAL_COPY_PATTERN(CustomEvent)
+    CLONABLE(CustomEvent)
 public:
     CustomEvent( const QString& strEvtName ) : GitlEvent(strEvtName) { m_strCustomVar = "Custom String"; }
     ADD_CLASS_FIELD(QString, strCustomVar, getCustomVar, setCustomVar)
