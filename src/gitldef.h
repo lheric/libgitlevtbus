@@ -36,6 +36,7 @@
 #define ADD_CLASS_FIELD(type, name, getter, setter) \
     public: \
         type& getter() { return m_##name; } \
+        type const & getter() const{ return m_##name; } \
         void setter(type name) { m_##name = name; } \
     private: \
         type m_##name;
@@ -43,6 +44,7 @@
 #define ADD_CLASS_FIELD_NOSETTER(type, name, getter) \
     public: \
         type& getter() { return m_##name; } \
+        type const & getter() const{ return m_##name; } \
     private: \
         type m_##name;
 
