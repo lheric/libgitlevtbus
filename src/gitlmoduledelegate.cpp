@@ -23,69 +23,50 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
-#ifndef GITLMODUALDELEGATE_H
-#define GITLMODUALDELEGATE_H
-
-#include <QObject>
-#include <QMap>
-#include <QMutex>
-#include <QMutexLocker>
-#include <QSharedPointer>
-#include <functional>
-#include "gitldef.h"
-#include "gitlevent.h"
-
-class GitlModual;
-class GitlEventBus;
-
-///
-/// \brief GitlCallBack gitl event callback function
-///
-typedef std::function<bool (GitlEvent&)> GitlCallBack;
-
-class GitlModualDelegate : public QObject
+#include "gitlmoduledelegate.h"
+#include "gitleventbus.h"
+#include <QDebug>
+#include <iostream>
+using namespace std;
+GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator)
 {
-    Q_OBJECT
-    friend class GitlModual;
-private:
-    explicit GitlModualDelegate(GitlModual *pcDelegator);
+    m_pcDelegator = pcDelegator;
+    m_pcGitlEvtBus = GitlEventBus::getInstance();
+    m_pcGitlEvtBus->registerModule(this);
+    m_strModuleName = "undefined_module_name";
 
-public:
-    /*!
-     * \brief subscribeToEvtByName listening to an event by name
-     * \param strEvtName event name
-     */
-    void subscribeToEvtByName( const QString& strEvtName,
-                               GitlCallBack pfListener );
+}
 
-    /*!
-     * \brief subscribeToEvtByName not listening to an event by name
-     * \param strEvtName event name
-     */
-    void unsubscribeToEvtByName( const QString& strEvtName );
 
-    /*!
-     * \brief dispatchEvt dispatch an event to subscribers
-     * \param pcEvt event
-     */
-    void dispatchEvt(const GitlEvent &rcEvt  ) const;
 
-public slots:
-    /*!
-     * \brief detonate notifyed by event bus
-     * \param cEvt
-     * \return
-     */
-    bool detonate( QSharedPointer<GitlEvent> pcEvt );
+void GitlModuleDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCallBack pfListener )
+{
+    m_cListeningEvts.insert(strEvtName, pfListener);
+    return;
+}
 
-protected:
-    bool xIsListenToEvt(const QString& strEvtName);
 
-    ADD_CLASS_FIELD( QString, strModualName, getModualName, setModualName )
-    ADD_CLASS_FIELD_PRIVATE( CONCATE(QMap<QString, GitlCallBack>), cListeningEvts )
-    ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
-    ADD_CLASS_FIELD_PRIVATE(GitlModual*, pcDelegator)
-    
-};
+void GitlModuleDelegate::unsubscribeToEvtByName( const QString& strEvtName )
+{
+    m_cListeningEvts.remove(strEvtName);
+}
 
-#endif // GITLMODUALDELEGATE_H
+bool GitlModuleDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
+{
+    QMap<QString, std::function<bool (GitlEvent&)>>::iterator p =
+            m_cListeningEvts.find(pcEvt->getEvtName());
+
+    if( p != m_cListeningEvts.end() )
+        (p.value())(*pcEvt.data());
+    return true;
+}
+
+bool GitlModuleDelegate::xIsListenToEvt( const QString& strEvtName )
+{
+    return m_cListeningEvts.contains(strEvtName);
+}
+
+void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
+{
+    m_pcGitlEvtBus->post(rcEvt);
+}

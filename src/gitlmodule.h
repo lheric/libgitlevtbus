@@ -23,8 +23,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
-#ifndef GITLMODUAL_H
-#define GITLMODUAL_H
+#ifndef GITLMODULE_H
+#define GITLMODULE_H
 
 #include <QVector>
 #include <QString>
@@ -33,18 +33,18 @@
 #include "gitldef.h"
 #include "gitlevent.h"
 
-#include "gitlmodualdelegate.h"
+#include "gitlmoduledelegate.h"
 
 class GitlEventBus;
 
 /*!
- * \brief The GitlModual class represents a modual
+ * \brief The GitlModule class represents a module
  */
 
-class GitlModual
+class GitlModule
 {
 public:
-    GitlModual();
+    GitlModule();
 
     /*!
      * \brief subscribeToEvtByName Subscribe to an event
@@ -67,16 +67,16 @@ public:
     void dispatchEvt(GitlEvent &rcEvt );
 
     /*!
-     * \brief setModualName Set the name of this modual. That's ok if you do not
-     * give a name to this modual. But for better debugging, we recommend you name it.
-     * \param strModualName name for this modual
+     * \brief setModuleName Set the name of this module. That's ok if you do not
+     * give a name to this module. But for better debugging, we recommend you name it.
+     * \param strModuleName name for this module
      */
-    void setModualName(QString strModualName );
+    void setModuleName(QString strModuleName );
 
     /// Delegate pattern
     /// Avoiding this class becoming a subclass of QObject
     /// (GUI class is based on QOBject, but QObject doesn't support virtual inheritance).
-    ADD_CLASS_FIELD_PRIVATE( GitlModualDelegate, cDelegate )
+    ADD_CLASS_FIELD_PRIVATE( GitlModuleDelegate, cDelegate )
 };
 
-#endif // GITLMODUAL_H
+#endif // GITLMODULE_H

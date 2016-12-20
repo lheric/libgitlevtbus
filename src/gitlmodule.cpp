@@ -23,32 +23,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
-#include "gitlmodual.h"
+#include "gitlmodule.h"
 #include "gitleventbus.h"
 #include <QDebug>
 
-GitlModual::GitlModual() :
+GitlModule::GitlModule() :
     m_cDelegate(this)
 {    
 }
 
-void GitlModual::subscribeToEvtByName( const QString& strEvtName,
+void GitlModule::subscribeToEvtByName( const QString& strEvtName,
                                        const GitlCallBack& pfListener )
 {
     return m_cDelegate.subscribeToEvtByName(strEvtName, pfListener);
 }
 
-void GitlModual::unsubscribeToEvtByName( const QString& strEvtName )
+void GitlModule::unsubscribeToEvtByName( const QString& strEvtName )
 {
     return m_cDelegate.unsubscribeToEvtByName(strEvtName);
 }
 
-void GitlModual::dispatchEvt( GitlEvent& rcEvt )
+void GitlModule::dispatchEvt( GitlEvent& rcEvt )
 {
     m_cDelegate.dispatchEvt(rcEvt);
 }
 
-void GitlModual::setModualName( QString strModualName )
+void GitlModule::setModuleName( QString strModuleName )
 {
-    m_cDelegate.setModualName(strModualName);
+    m_cDelegate.setModuleName(strModuleName);
 }

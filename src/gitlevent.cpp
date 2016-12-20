@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
 #include "gitlevent.h"
-#include "gitlmodual.h"
+#include "gitlmodule.h"
 #include <QDebug>
 #include "gitleventbus.h"
 #include <QSharedPointer>

@@ -20,15 +20,15 @@ Quick start
 ===========
 See examples/examples.pro
 ```c++
-#include "gitlmodual.h"
+#include "gitlmodule.h"
 #include <QDebug>
 
 int main(int argc, char *argv[])
 {
-    GitlModual cModual;
+    GitlModule cModule;
 
     /// subscribe to an event
-    cModual.subscribeToEvtByName("I am a test event",
+    cModule.subscribeToEvtByName("I am a test event",
     [](GitlEvent& rcEvt)->bool
     {
         qDebug() << "Hello GitlEvtBus!";
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     GitlEvent cEvent("I am a test event");              ///< create an event
     cEvent.dispatch();                                  ///< dispatch
-    /// output: "Hello GitlEvtBus!"
+    /// output: "Hello GitlEvtBus!"*/
     return 0;
 }
 ```

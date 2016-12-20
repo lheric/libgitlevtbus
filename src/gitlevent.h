@@ -31,7 +31,7 @@
 #include "gitldef.h"
 #include "gitleventparam.h"
 
-class GitlModual;
+class GitlModule;
 
 /*!
  * \brief The GitlEvent class represents an event.
@@ -74,7 +74,7 @@ public:
 
 
     /*!
-     * \brief dispatch dispatch this event to event bus, all modual subscribed to this event name will be notified.
+     * \brief dispatch dispatch this event to event bus, all module subscribed to this event name will be notified.
      */
     void dispatch() const;
 

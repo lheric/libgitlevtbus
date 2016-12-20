@@ -32,14 +32,14 @@ GitlEventBus::GitlEventBus()
 {
 }
 
-/*! connect a modual to the event bus
+/*! connect a module to the event bus
   */
 Q_DECLARE_METATYPE( QSharedPointer<GitlEvent> )
-bool GitlEventBus::registerModual(GitlModualDelegate* pcModual)
+bool GitlEventBus::registerModule(GitlModuleDelegate* pcModule)
 {    
     qRegisterMetaType< QSharedPointer<GitlEvent> >("QSharedPointer<GitlEvent>");
     connect(this,     SIGNAL(eventTriggered(QSharedPointer<GitlEvent>) ),
-            pcModual, SLOT  (detonate      (QSharedPointer<GitlEvent>) ),
+            pcModule, SLOT  (detonate      (QSharedPointer<GitlEvent>) ),
             Qt::AutoConnection );
 
     return true;
@@ -54,7 +54,7 @@ void GitlEventBus::post(const GitlEvent& rcEvt) const
     QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
 
 
-    /// notify moduals
+    /// notify modules
     emit eventTriggered(pcEvtCopy);
 
 }

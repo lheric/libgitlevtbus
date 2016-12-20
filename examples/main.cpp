@@ -23,15 +23,15 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************/
-#include "gitlmodual.h"
+#include "gitlmodule.h"
 #include <QDebug>
 
 int main(int argc, char *argv[])
 {
-    GitlModual cModual;
+    GitlModule cModule;
 
     /// subscribe to an event
-    cModual.subscribeToEvtByName("I am a test event",
+    cModule.subscribeToEvtByName("I am a test event",
     [](GitlEvent& rcEvt)->bool
     {
         qDebug() << "Hello GitlEvtBus!";

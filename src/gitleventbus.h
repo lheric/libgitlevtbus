@@ -33,10 +33,10 @@
 #include <QSharedPointer>
 #include "gitldef.h"
 #include "gitlevent.h"
-#include "gitlmodual.h"
+#include "gitlmodule.h"
 
 
-class GitlModualDelegate;
+class GitlModuleDelegate;
 /*!
  * \brief The GitlEventBus class represents the event bus
  */
@@ -47,9 +47,9 @@ private:
     GitlEventBus();
 
 public:
-    /*! connect a modual to the event bus
+    /*! connect a module to the event bus
       */
-    bool registerModual(GitlModualDelegate *pcModual);
+    bool registerModule(GitlModuleDelegate *pcModule);
 
 
 public slots:
