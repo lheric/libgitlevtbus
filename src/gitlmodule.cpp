@@ -57,3 +57,13 @@ GitlEventBus *GitlModule::getEventBus()
 {
     return m_cDelegate.getGitlEvtBus();
 }
+
+void GitlModule::detach()
+{
+    m_cDelegate.detach();
+}
+
+void GitlModule::attach(GitlEventBus *pcEventBus)
+{
+    m_cDelegate.attach(pcEventBus);
+}

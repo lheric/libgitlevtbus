@@ -71,5 +71,22 @@ bool GitlModuleDelegate::xIsListenToEvt( const QString& strEvtName )
 
 void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
 {
-    m_pcGitlEvtBus->post(rcEvt);
+    if(m_pcGitlEvtBus != NULL)
+        m_pcGitlEvtBus->post(rcEvt);
+}
+
+void GitlModuleDelegate::detach()
+{
+    if(m_pcGitlEvtBus != NULL)
+        m_pcGitlEvtBus->unregisterModule(this);
+    m_pcGitlEvtBus = NULL;
+}
+
+void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
+{
+    if(pcEventBus == NULL)
+        return;
+    detach();
+    m_pcGitlEvtBus = pcEventBus;
+    m_pcGitlEvtBus->registerModule(this);
 }

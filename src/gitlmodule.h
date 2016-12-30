@@ -85,6 +85,17 @@ public:
      */
     GitlEventBus* getEventBus();
 
+    /*!
+     * \brief detach Detach the module
+     */
+    void detach();
+
+    /*!
+     * \brief attach Attach the module to a new event bus
+     * \param pcEventBus
+     */
+    void attach(GitlEventBus *pcEventBus);
+
 
     /// Delegate pattern
     /// Avoiding this class becoming a subclass of QObject

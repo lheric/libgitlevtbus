@@ -70,6 +70,19 @@ public:
      */
     void dispatchEvt(const GitlEvent &rcEvt  ) const;
 
+
+    /*!
+     * \brief detach Detach the module
+     */
+    void detach();
+
+
+    /*!
+     * \brief attach Attach the module to a new event bus
+     * \param pcEventBus
+     */
+    void attach(GitlEventBus *pcEventBus);
+
 public slots:
     /*!
      * \brief detonate notifyed by event bus

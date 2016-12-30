@@ -50,6 +50,10 @@ bool GitlEventBus::registerModule(GitlModuleDelegate* pcModule)
     return true;
 }
 
+bool GitlEventBus::unregisterModule(GitlModuleDelegate *pcModule)
+{
+    return disconnect(this, NULL, pcModule, NULL);
+}
 
 
 /*! send event to event bus

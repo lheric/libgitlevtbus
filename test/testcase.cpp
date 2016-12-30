@@ -223,6 +223,17 @@ private slots:
         QVERIFY(cModule3.getEventBus() == pcBus2);
         QVERIFY(cModule4.getEventBus() == pcBus2);
 
+        ///
+        TestModule cModule5(pcBus1);
+        cModule5.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule5, TestModule::callback));
+
+        cEvt.dispatch(pcBus2);
+        QVERIFY(!cModule5.getNotified());
+
+        cModule5.attach(pcBus2);
+        cEvt.dispatch(pcBus2);
+        QVERIFY(cModule5.getNotified());
+
     }
 };
 

@@ -53,10 +53,20 @@ public:
      */
     static GitlEventBus *create();
 
-    /*! connect a module to the event bus
-      */
+    /*!
+     * \brief registerModule connect a module to the event bus
+     * \param pcModule
+     * \return
+     */
     bool registerModule(GitlModuleDelegate *pcModule);
 
+
+    /*!
+     * \brief unregisterModule disconncet a module from the event bus
+     * \param pcModule
+     * \return
+     */
+    bool unregisterModule(GitlModuleDelegate *pcModule);
 
 public slots:
     /*! send event to event bus
