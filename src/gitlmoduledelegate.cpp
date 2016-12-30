@@ -28,10 +28,13 @@
 #include <QDebug>
 #include <iostream>
 using namespace std;
-GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator)
+GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pcEventBus)
 {
     m_pcDelegator = pcDelegator;
-    m_pcGitlEvtBus = GitlEventBus::getInstance();
+    if(pcEventBus == NULL)
+        m_pcGitlEvtBus = GitlEventBus::getInstance();
+    else
+        m_pcGitlEvtBus = pcEventBus;
     m_pcGitlEvtBus->registerModule(this);
     m_strModuleName = "undefined_module_name";
 

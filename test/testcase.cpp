@@ -39,7 +39,8 @@ using namespace std;
 class TestModule : public GitlModule
 {
 public:
-    TestModule()
+    TestModule(GitlEventBus* pcEventBus = NULL):
+        GitlModule(pcEventBus)
     {
         this->m_bNotified = false;
 
@@ -181,6 +182,47 @@ private slots:
         cEvt.dispatch();
         QVERIFY(cModule.getNotified());
         QVERIFY(cModule.getCustomVar() == QString("Custom String"));
+    }
+
+    void multiplyEventBus()
+    {
+        GitlEventBus* pcBus1 = GitlEventBus::create(); TestModule cModule1(pcBus1); TestModule cModule2(pcBus1);
+        GitlEventBus* pcBus2 = GitlEventBus::create(); TestModule cModule3(pcBus2); TestModule cModule4(pcBus2);
+
+        /// all module are listening to the same events, but on different event buses.
+        cModule1.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule1, TestModule::callback));
+        cModule2.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule2, TestModule::callback));
+        cModule3.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule3, TestModule::callback));
+        cModule4.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule4, TestModule::callback));
+
+        /// event
+        CustomEvent cEvt("TEST_EVENT_1");
+
+        /// no one get notified because no module is attached to the default event bus
+        cEvt.dispatch();
+        QVERIFY(!cModule1.getNotified());
+        QVERIFY(!cModule2.getNotified());
+        QVERIFY(!cModule3.getNotified());
+        QVERIFY(!cModule4.getNotified());
+
+        /// this will only notify module 1 & 2
+        cEvt.dispatch(pcBus1);
+        QVERIFY(cModule1.getNotified());
+        QVERIFY(cModule2.getNotified());
+        QVERIFY(!cModule3.getNotified());
+        QVERIFY(!cModule4.getNotified());
+
+        /// this will notify module 3 & 4
+        cEvt.dispatch(cModule3.getEventBus());
+        QVERIFY(cModule3.getNotified());
+        QVERIFY(cModule4.getNotified());
+
+        /// make sure everyone is attached to the correct event bus
+        QVERIFY(cModule1.getEventBus() == pcBus1);
+        QVERIFY(cModule2.getEventBus() == pcBus1);
+        QVERIFY(cModule3.getEventBus() == pcBus2);
+        QVERIFY(cModule4.getEventBus() == pcBus2);
+
     }
 };
 

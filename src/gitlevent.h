@@ -32,6 +32,7 @@
 #include "gitleventparam.h"
 
 class GitlModule;
+class GitlEventBus;
 
 /*!
  * \brief The GitlEvent class represents an event.
@@ -75,8 +76,10 @@ public:
 
     /*!
      * \brief dispatch dispatch this event to event bus, all module subscribed to this event name will be notified.
+     * \param pcEventBus If pcEventBus is NULL, it will find a global (default) event bus and post the event onto the bus.
+     *                   Or you can specify another event bus.
      */
-    void dispatch() const;
+    void dispatch(GitlEventBus *pcEventBus = NULL) const;
 
 protected:    
 

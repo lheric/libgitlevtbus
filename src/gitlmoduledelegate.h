@@ -48,7 +48,7 @@ class GitlModuleDelegate : public QObject
     Q_OBJECT
     friend class GitlModule;
 private:
-    explicit GitlModuleDelegate(GitlModule *pcDelegator);
+    explicit GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus *pcEventBus = NULL);
 
 public:
     /*!

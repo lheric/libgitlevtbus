@@ -44,7 +44,13 @@ class GitlEventBus;
 class GitlModule
 {
 public:
-    GitlModule();
+    /**
+     * @brief GitlModule Represents a module in the event bus. It will keep listening to events
+     *                   in the event bus and catch those it is interested in.
+     * @param pcEventBus If pcEventBus it will find a gloabl event bus using singleton pattern.
+     *                   Or you can specify an exsiting event bus.
+     */
+    GitlModule(GitlEventBus* pcEventBus = NULL);
 
     /*!
      * \brief subscribeToEvtByName Subscribe to an event
@@ -72,6 +78,13 @@ public:
      * \param strModuleName name for this module
      */
     void setModuleName(QString strModuleName );
+
+    /**
+     * @brief getEventBus Get the event bus that this module is attached to
+     * @return
+     */
+    GitlEventBus* getEventBus();
+
 
     /// Delegate pattern
     /// Avoiding this class becoming a subclass of QObject

@@ -32,6 +32,11 @@ GitlEventBus::GitlEventBus()
 {
 }
 
+GitlEventBus *GitlEventBus::create()
+{
+    return new GitlEventBus();
+}
+
 /*! connect a module to the event bus
   */
 Q_DECLARE_METATYPE( QSharedPointer<GitlEvent> )

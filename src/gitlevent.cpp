@@ -55,7 +55,10 @@ bool GitlEvent::setParameter(const QString& strParam, const QVariant& rvValue)
     return true;
 }
 
-void GitlEvent::dispatch() const
+void GitlEvent::dispatch(GitlEventBus* pcEventBus) const
 {
-    GitlEventBus::getInstance()->post(*this);
+    if(pcEventBus == NULL)
+        GitlEventBus::getInstance()->post(*this);
+    else
+        pcEventBus->post(*this);
 }

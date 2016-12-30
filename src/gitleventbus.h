@@ -47,6 +47,12 @@ private:
     GitlEventBus();
 
 public:
+    /*!
+     * \brief create The safe way to explictly create a new event bus
+     * \return
+     */
+    static GitlEventBus *create();
+
     /*! connect a module to the event bus
       */
     bool registerModule(GitlModuleDelegate *pcModule);

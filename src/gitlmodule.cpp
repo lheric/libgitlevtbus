@@ -27,8 +27,8 @@
 #include "gitleventbus.h"
 #include <QDebug>
 
-GitlModule::GitlModule() :
-    m_cDelegate(this)
+GitlModule::GitlModule(GitlEventBus *pcEventBus) :
+    m_cDelegate(this, pcEventBus)
 {    
 }
 
@@ -51,4 +51,9 @@ void GitlModule::dispatchEvt( GitlEvent& rcEvt )
 void GitlModule::setModuleName( QString strModuleName )
 {
     m_cDelegate.setModuleName(strModuleName);
+}
+
+GitlEventBus *GitlModule::getEventBus()
+{
+    return m_cDelegate.getGitlEvtBus();
 }
