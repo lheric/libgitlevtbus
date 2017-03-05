@@ -28,15 +28,19 @@
 
 int main(int argc, char *argv[])
 {
+    Q_UNUSED(argc)
+    Q_UNUSED(argv)
+
     GitlModule cModule;
 
     /// subscribe to an event
     cModule.subscribeToEvtByName("I am a test event",
-    [](GitlEvent& rcEvt)->bool
-    {
-        qDebug() << "Hello GitlEvtBus!";
-        return true;
-    }
+        [](GitlEvent& rcEvt)->bool
+        {
+            Q_UNUSED(rcEvt)
+            qDebug() << "Hello GitlEvtBus!";
+            return true;
+        }
     );
 
     GitlEvent cEvent("I am a test event");              ///< create an event

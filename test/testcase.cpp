@@ -53,6 +53,7 @@ public:
 
     bool callback( GitlEvent& rcEvt)
     {
+        Q_UNUSED(rcEvt)
         this->m_bNotified = true;
         return true;
     }
@@ -109,6 +110,7 @@ private slots:
         cModule.subscribeToEvtByName("TEST_EVENT_1",
          [&](GitlEvent& e)->bool
          {
+            Q_UNUSED(e)
             cModule.setNotified(true);
             return true;
          });
