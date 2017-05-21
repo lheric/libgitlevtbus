@@ -36,23 +36,21 @@
 /*! Q_PROPERTY getter and setter generator*/
 #define ADD_QPROP_RW_INIT(type, name, getter, setter, init) \
     public: \
-        Q_PROPERTY(type name MEMBER m_##name READ getter WRITE setter) \
+        Q_PROPERTY(type name MEMBER m_##name READ getter WRITE setter NOTIFY name##Changed) \
         type& getter() { return m_##name; } \
         type const & getter() const{ return m_##name; } \
-        void setter(type name) { m_##name = name; } \
-    signals: \
-        void name##Changed(type& name); \
+        void setter(type name) { m_##name = name; emit name##Changed(name);} \
+        Q_SIGNAL void name##Changed(type& name); \
     private: \
         type m_##name = init;
 
 #define ADD_QPROP_RW(type, name, getter, setter) \
     public: \
-        Q_PROPERTY(type name MEMBER m_##name READ getter WRITE setter) \
+        Q_PROPERTY(type name MEMBER m_##name READ getter WRITE setter NOTIFY name##Changed) \
         type& getter() { return m_##name; } \
         type const & getter() const{ return m_##name; } \
-        void setter(type name) { m_##name = name; } \
-    signals: \
-        void name##Changed(type& name); \
+        void setter(type name) { m_##name = name; emit name##Changed(name);} \
+        Q_SIGNAL void name##Changed(type& name); \
     private: \
         type m_##name;
 
@@ -62,8 +60,6 @@
         Q_PROPERTY(type name MEMBER m_##name READ getter) \
         type& getter() { return m_##name; } \
         type const & getter() const{ return m_##name; } \
-    signals: \
-        void name##Changed(type& name); \
     private: \
         type m_##name = init;
 
@@ -72,23 +68,18 @@
         Q_PROPERTY(type name MEMBER m_##name READ getter) \
         type& getter() { return m_##name; } \
         type const & getter() const{ return m_##name; } \
-    signals: \
-        void name##Changed(type& name); \
     private: \
         type m_##name;
 
 #define ADD_QPROP_PR_INIT(type, name, init) \
     public: \
         Q_PROPERTY(type name MEMBER m_##name) \
-    signals: \
-        void name##Changed(type& name); \
     private: \
         type m_##name = init;
 
 #define ADD_QPROP_PR(type, name) \
     public: \
-        Q_PROPERTY(type name MEMBER m_##name NOTIFY name##Changed) \
-        Q_SIGNAL void name##Changed(type& name); \
+        Q_PROPERTY(type name MEMBER m_##name) \
     private: \
         type m_##name;
 

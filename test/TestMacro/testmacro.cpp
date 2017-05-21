@@ -16,8 +16,7 @@ public:
     {
     }
 
-signals: \
-    void iIntPRChanged(const int &iIntPR); \
+signals:
 
     ADD_QPROP_PR(int, iIntPR )
     ADD_QPROP_PR_INIT(int, iIntPRInit, 123)
@@ -65,6 +64,18 @@ private slots:
 
         exampleClass.getIntField();
         QCOMPARE(exampleClass.getIntFieldInit(), 987);
+    }
+
+    void test_signals()
+    {
+        ExampleClass exampleClass;
+
+        bool bTriggered = false;
+        connect(&exampleClass, &ExampleClass::strRWInitChanged, [&](QString &strRWInitChanged){bTriggered = true;});
+        exampleClass.setProperty("strRWInit","changed");
+
+        QCOMPARE(exampleClass.getRWInit(), QString("changed"));
+
     }
 
 
