@@ -52,7 +52,7 @@ bool GitlEventBus::registerModule(GitlModuleDelegate* pcModule)
 
 bool GitlEventBus::unregisterModule(GitlModuleDelegate *pcModule)
 {
-    return disconnect(this, NULL, pcModule, NULL);
+    return disconnect(this, nullptr, pcModule, nullptr);
 }
 
 

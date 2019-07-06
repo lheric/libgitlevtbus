@@ -31,7 +31,7 @@ using namespace std;
 GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pcEventBus)
 {
     m_pcDelegator = pcDelegator;
-    if(pcEventBus == NULL)
+    if(pcEventBus == nullptr)
         m_pcGitlEvtBus = GitlEventBus::getInstance();
     else
         m_pcGitlEvtBus = pcEventBus;
@@ -71,20 +71,20 @@ bool GitlModuleDelegate::xIsListenToEvt( const QString& strEvtName )
 
 void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
 {
-    if(m_pcGitlEvtBus != NULL)
+    if(m_pcGitlEvtBus != nullptr)
         m_pcGitlEvtBus->post(rcEvt);
 }
 
 void GitlModuleDelegate::detach()
 {
-    if(m_pcGitlEvtBus != NULL)
+    if(m_pcGitlEvtBus != nullptr)
         m_pcGitlEvtBus->unregisterModule(this);
-    m_pcGitlEvtBus = NULL;
+    m_pcGitlEvtBus = nullptr;
 }
 
 void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
 {
-    if(pcEventBus == NULL)
+    if(pcEventBus == nullptr)
         return;
     detach();
     m_pcGitlEvtBus = pcEventBus;

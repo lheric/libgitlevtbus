@@ -57,7 +57,7 @@ bool GitlEvent::setParameter(const QString& strParam, const QVariant& rvValue)
 
 void GitlEvent::dispatch(GitlEventBus* pcEventBus) const
 {
-    if(pcEventBus == NULL)
+    if(pcEventBus == nullptr)
         GitlEventBus::getInstance()->post(*this);
     else
         pcEventBus->post(*this);

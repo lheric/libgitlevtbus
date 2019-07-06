@@ -71,7 +71,7 @@ private slots:
         ExampleClass exampleClass;
 
         bool bTriggered = false;
-        connect(&exampleClass, &ExampleClass::strRWInitChanged, [&](QString &strRWInitChanged){bTriggered = true;});
+        connect(&exampleClass, &ExampleClass::strRWInitChanged, [&](QString &strRWInitChanged){Q_UNUSED(strRWInitChanged); bTriggered = true;});
         exampleClass.setProperty("strRWInit","changed");
 
         QCOMPARE(exampleClass.getRWInit(), QString("changed"));
