@@ -68,14 +68,14 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 ## 4. Build and CI (medium priority)
 
 - [ ] **Include paths depend on the folder name.** `INCLUDEPATH += ../../libgitlevtbus/src` in `examples/examples.pro:21` and `test/TestGitlEvtBus/TestGitlEvtBus.pro:18` only works if the repo is cloned into a folder named `libgitlevtbus`. Use `$$PWD/../src` or `$$PWD/../../src`.
-- [ ] **`src/src.pro`:** remove `QT += widgets` (this is a core-only library), the duplicate `CONFIG += c++11`, and `CONFIG += console`, which means nothing for a static library.
+- [ ] **`src/src.pro`:** remove the duplicate `CONFIG += c++11`, and `CONFIG += console`, which means nothing for a static library. (`QT += widgets` and the default `gui` module are already removed; the library is core-only.)
 - [ ] **Legacy settings:** `CONFIG += ordered` is deprecated. Replace it with `.depends`.
 - [ ] **Signal/slot setup:**
   - Switch to the new-style `connect(this, &GitlEventBus::eventTriggered, pcModule, &GitlModuleDelegate::detonate)` to get compile-time checking.
   - Move `Q_DECLARE_METATYPE(QSharedPointer<GitlEvent>)` into the header.
   - Call `qRegisterMetaType` once instead of on every `registerModule`.
 - [x] **CI no longer runs.** Travis CI for open source is gone, and the config targets Ubuntu Trusty with an old Ubuntu SDK PPA. It also never ran the tests. Replaced with GitHub Actions (`.github/workflows/ci.yml`): Qt 5 on Linux, macOS and Windows, running the test binaries and the example.
-- [ ] **Add Qt 6 to the CI matrix.** The suite already passes locally with Qt 6.2.1.
+- [x] **Add Qt 6 to the CI matrix.** CI now builds and tests Qt 5 and Qt 6.8 (LTS) on Linux, macOS and Windows.
 - [ ] **Consider CMake** (and optionally `find_package` support), since Qt 6 has moved away from qmake.
 
 ---

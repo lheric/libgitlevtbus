@@ -13,22 +13,27 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  QT5_VERSION: '5.15.2'   # Windows only; Linux and macOS use the distro / Homebrew Qt 5
+  QT6_VERSION: '6.8.3'    # Qt 6 LTS
+
 jobs:
   build-and-test:
-    name: ${{ matrix.os }} / Qt 5
+    name: ${{ matrix.os }} / Qt ${{ matrix.qt }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        qt: ['5', '6']
 
     steps:
       - uses: actions/checkout@v4
 
-      # ---- Install Qt 5 ----------------------------------------------------
+      # ---- Install Qt ----------------------------------------------------------
       - name: Install Qt 5 (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.qt == '5'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends qtbase5-dev qt5-qmake
@@ -38,17 +43,18 @@ jobs:
 
       # Homebrew's qt@5 is native arm64; the official 5.15.2 binaries are x86_64 only.
       - name: Install Qt 5 (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.qt == '5'
         run: |
           brew install qt@5
           echo "QMAKE=$(brew --prefix qt@5)/bin/qmake" >> "$GITHUB_ENV"
 
-      - name: Install Qt 5 (Windows)
-        if: runner.os == 'Windows'
+      # Qt 6 on every OS, and Qt 5 on Windows, come from the Qt online installer.
+      - name: Install Qt ${{ matrix.qt }} (installer)
+        if: matrix.qt == '6' || runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
-          arch: win64_msvc2019_64
+          version: ${{ matrix.qt == '5' && env.QT5_VERSION || env.QT6_VERSION }}
+          arch: ${{ runner.os == 'Windows' && (matrix.qt == '5' && 'win64_msvc2019_64' || 'win64_msvc2022_64') || '' }}
           cache: true
 
       - name: Set up MSVC (Windows)
@@ -61,6 +67,7 @@ jobs:
       - name: Build (Linux, macOS)
         if: runner.os != 'Windows'
         run: |
+          QMAKE=${QMAKE:-qmake}
           "$QMAKE" -v
           mkdir build && cd build
           "$QMAKE" ../libgitlevtbus.pro -r "CONFIG+=release" "CONFIG-=debug_and_release" "CONFIG+=sdk_no_version_check"
