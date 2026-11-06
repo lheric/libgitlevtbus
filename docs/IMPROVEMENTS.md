@@ -74,7 +74,8 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
   - Switch to the new-style `connect(this, &GitlEventBus::eventTriggered, pcModule, &GitlModuleDelegate::detonate)` to get compile-time checking.
   - Move `Q_DECLARE_METATYPE(QSharedPointer<GitlEvent>)` into the header.
   - Call `qRegisterMetaType` once instead of on every `registerModule`.
-- [ ] **CI no longer runs.** Travis CI for open source is gone, and the config targets Ubuntu Trusty with an old Ubuntu SDK PPA. It also never ran the tests. Replace it with GitHub Actions: a Qt 5.15 + Qt 6 matrix on Linux, macOS and Windows that runs the test binaries.
+- [x] **CI no longer runs.** Travis CI for open source is gone, and the config targets Ubuntu Trusty with an old Ubuntu SDK PPA. It also never ran the tests. Replaced with GitHub Actions (`.github/workflows/ci.yml`): Qt 5 on Linux, macOS and Windows, running the test binaries and the example.
+- [ ] **Add Qt 6 to the CI matrix.** The suite already passes locally with Qt 6.2.1.
 - [ ] **Consider CMake** (and optionally `find_package` support), since Qt 6 has moved away from qmake.
 
 ---
@@ -92,7 +93,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 
 - [ ] Fix the README typos: "lisence", "deliverd", "complier".
 - [ ] The README points to `test/testcase.cpp`; the file is actually `test/TestGitlEvtBus/testcase.cpp`.
-- [ ] Replace the dead Travis badge with a GitHub Actions badge.
+- [x] Replace the dead Travis badge with a GitHub Actions badge.
 - [ ] Replace "Qt 5.1.0 or later" with the Qt versions CI actually covers.
 - [ ] Document the threading model: callbacks run on the thread where the module was created, and that thread needs a running event loop.
 
