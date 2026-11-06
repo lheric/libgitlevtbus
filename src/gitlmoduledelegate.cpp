@@ -43,7 +43,7 @@ GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pc
 void GitlModuleDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCallBack pfListener )
 {
     QMutexLocker cLocker(&m_cMutex);
-    m_cListeningEvts.insert(strEvtName, pfListener);
+    m_cListeningEvts.insert(strEvtName, pfListener);   ///< replaces any existing callback
 }
 
 

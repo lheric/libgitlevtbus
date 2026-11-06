@@ -291,6 +291,17 @@ private slots:
         QCOMPARE(iCalls, 1);
     }
 
+    /// 1.5: subscribing twice to the same event replaces the first callback
+    void subscribeTwiceReplaces()
+    {
+        TestModule cModule;
+        int iFirst = 0, iSecond = 0;
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iFirst;  return true; });
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iSecond; return true; });
+        cModule.dispatchEvt(GitlEvent("TEST_EVENT_1"));
+        QCOMPARE(iFirst, 0);
+        QCOMPARE(iSecond, 1);
+    }
 
     /// a callback may subscribe/dispatch from inside a callback without deadlocking
     void reentrantCallback()

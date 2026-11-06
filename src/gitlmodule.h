@@ -61,7 +61,8 @@ public:
     virtual ~GitlModule();
 
     /*!
-     * \brief subscribeToEvtByName Subscribe to an event
+     * \brief subscribeToEvtByName Subscribe to an event. A module holds at most
+     * one callback per event name: subscribing again replaces the previous one.
      * \param strEvtName event name
      * \param pfListener listener callback function
      */

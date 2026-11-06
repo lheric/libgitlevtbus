@@ -58,7 +58,9 @@ private:
 
 public:
     /*!
-     * \brief subscribeToEvtByName listening to an event by name
+     * \brief subscribeToEvtByName listening to an event by name.
+     *        A module holds at most one callback per event name: subscribing
+     *        again to the same name replaces the previous callback.
      * \param strEvtName event name
      */
     void subscribeToEvtByName( const QString& strEvtName,

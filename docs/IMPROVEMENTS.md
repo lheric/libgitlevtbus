@@ -34,7 +34,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [x] `GitlEventBus::create()` returns a raw pointer with no stated owner, and modules keep a plain `GitlEventBus*`. Deleting the bus leaves every attached module pointing at freed memory. Store a `QPointer<GitlEventBus>`, or have the bus detach its modules when it's destroyed. Document who owns a bus returned by `create()`.
 
 ### 1.5 Subscribing twice silently replaces the first callback — `src/gitlmoduledelegate.cpp:47`
-- [ ] `QMap::insert` overwrites the existing callback. Either document "one handler per event per module" or switch to `QMultiMap` or a list.
+- [x] `QMap::insert` overwrites the existing callback. Either document "one handler per event per module" or switch to `QMultiMap` or a list.
 
 ---
 
