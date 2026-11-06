@@ -26,8 +26,7 @@
 #include "gitlmoduledelegate.h"
 #include "gitleventbus.h"
 #include <QDebug>
-#include <iostream>
-using namespace std;
+
 GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pcEventBus)
 {
     m_pcDelegator = pcDelegator;
@@ -37,46 +36,68 @@ GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pc
         m_pcGitlEvtBus = pcEventBus;
     m_pcGitlEvtBus->registerModule(this);
     m_strModuleName = "undefined_module_name";
-
 }
 
 
 
 void GitlModuleDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCallBack pfListener )
 {
+    QMutexLocker cLocker(&m_cMutex);
     m_cListeningEvts.insert(strEvtName, pfListener);
-    return;
 }
 
 
 void GitlModuleDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 {
+    QMutexLocker cLocker(&m_cMutex);
     m_cListeningEvts.remove(strEvtName);
+}
+
+void GitlModuleDelegate::clearSubscriptions()
+{
+    QMutexLocker cLocker(&m_cMutex);
+    m_cListeningEvts.clear();
 }
 
 bool GitlModuleDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
 {
-    QMap<QString, std::function<bool (GitlEvent&)>>::iterator p =
-            m_cListeningEvts.find(pcEvt->getEvtName());
-
-    if( p != m_cListeningEvts.end() )
-        (p.value())(*pcEvt.data());
+    /// copy the callback under the lock, then call it without holding the lock,
+    /// so a callback may subscribe/unsubscribe/dispatch without deadlocking
+    GitlCallBack pfListener;
+    {
+        QMutexLocker cLocker(&m_cMutex);
+        auto p = m_cListeningEvts.constFind(pcEvt->getEvtName());
+        if( p == m_cListeningEvts.constEnd() )
+            return true;
+        pfListener = p.value();
+    }
+    const GitlEvent& rcEvt = *pcEvt;
+    pfListener(rcEvt);
     return true;
 }
 
 bool GitlModuleDelegate::xIsListenToEvt( const QString& strEvtName )
 {
+    QMutexLocker cLocker(&m_cMutex);
     return m_cListeningEvts.contains(strEvtName);
 }
 
 void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
 {
-    if(m_pcGitlEvtBus != nullptr)
-        m_pcGitlEvtBus->post(rcEvt);
+    GitlEventBus* pcBus = getGitlEvtBus();
+    if(pcBus != nullptr)    ///< post without holding the lock: a direct connection may call back into detonate()
+        pcBus->post(rcEvt);
+}
+
+GitlEventBus* GitlModuleDelegate::getGitlEvtBus() const
+{
+    QMutexLocker cLocker(&m_cMutex);
+    return m_pcGitlEvtBus;
 }
 
 void GitlModuleDelegate::detach()
 {
+    QMutexLocker cLocker(&m_cMutex);
     if(m_pcGitlEvtBus != nullptr)
         m_pcGitlEvtBus->unregisterModule(this);
     m_pcGitlEvtBus = nullptr;
@@ -86,7 +107,9 @@ void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
 {
     if(pcEventBus == nullptr)
         return;
-    detach();
+    QMutexLocker cLocker(&m_cMutex);
+    if(m_pcGitlEvtBus != nullptr)
+        m_pcGitlEvtBus->unregisterModule(this);
     m_pcGitlEvtBus = pcEventBus;
     m_pcGitlEvtBus->registerModule(this);
 }

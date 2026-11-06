@@ -50,7 +50,15 @@ public:
      * @param pcEventBus If pcEventBus it will find a gloabl event bus using singleton pattern.
      *                   Or you can specify an exsiting event bus.
      */
-    GitlModule(GitlEventBus* pcEventBus = NULL);
+    GitlModule(GitlEventBus* pcEventBus = nullptr);
+
+    /*!
+     * \brief ~GitlModule Detaches from the bus and drops all subscriptions.
+     * Callbacks run on the thread the module was created in. If a subclass's
+     * callbacks use its own members and the module can be destroyed from another
+     * thread, call detach() at the start of the subclass destructor.
+     */
+    virtual ~GitlModule();
 
     /*!
      * \brief subscribeToEvtByName Subscribe to an event
@@ -70,7 +78,7 @@ public:
      * \brief dispatchEvt Dispatch an event
      * \param rcEvt event
      */
-    void dispatchEvt(GitlEvent &rcEvt );
+    void dispatchEvt(const GitlEvent &rcEvt );
 
     /*!
      * \brief setModuleName Set the name of this module. That's ok if you do not

@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 
     /// subscribe to an event
     cModule.subscribeToEvtByName("I am a test event",
-        [](GitlEvent& rcEvt)->bool
+        [](const GitlEvent& rcEvt)->bool
         {
             Q_UNUSED(rcEvt)
             qDebug() << "Hello GitlEvtBus!";

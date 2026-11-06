@@ -41,6 +41,9 @@ class GitlEventBus;
  *  CLONABLE(subclassname) in the subclass. Otherwise the event is sliced when it
  *  is copied onto the bus; GitlEventBus::post() detects this, logs an error and
  *  drops the event (and asserts in debug builds).
+ *
+ *  Listeners receive the event as const GitlEvent&. One copy is shared by all
+ *  listeners, possibly on different threads, so it must not be modified.
  */
 class GitlEvent
 {

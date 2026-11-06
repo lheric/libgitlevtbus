@@ -30,6 +30,8 @@
 #include <QSharedPointer>
 #include <QString>
 #include <functional>
+#include <atomic>
+#include <QThread>
 #include <QRegularExpression>
 #include "gitldef.h"
 #include "gitlmodule.h"
@@ -52,7 +54,7 @@ public:
         subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK(TestModule::callback));
     }
 
-    bool callback( GitlEvent& rcEvt)
+    bool callback( const GitlEvent& rcEvt)
     {
         Q_UNUSED(rcEvt)
         this->m_bNotified = true;
@@ -83,11 +85,11 @@ public:
         this->m_bNotified = false;
     }
 
-    bool callback( GitlEvent& rcEvt)
+    bool callback( const GitlEvent& rcEvt)
     {
-        CustomEvent& pcCusEvt = static_cast<CustomEvent&>(rcEvt);
+        const CustomEvent& rcCusEvt = static_cast<const CustomEvent&>(rcEvt);
         this->m_bNotified = true;
-        this->m_strCustomVar = pcCusEvt.getCustomVar();
+        this->m_strCustomVar = rcCusEvt.getCustomVar();
         return true;
     }
 
@@ -109,7 +111,7 @@ private slots:
     {
         TestModule cModule;
         cModule.subscribeToEvtByName("TEST_EVENT_1",
-         [&](GitlEvent& e)->bool
+         [&](const GitlEvent& e)->bool
          {
             Q_UNUSED(e)
             cModule.setNotified(true);
@@ -241,9 +243,74 @@ private slots:
 
 
 
+    /// 1.3: a destroyed module is disconnected and its callbacks are not called
+    void destroyedModuleIsDisconnected()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        int iCalls = 0;
+        {
+            GitlModule cModule(pcBus);
+            cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iCalls; return true; });
+            GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        }
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QCOMPARE(iCalls, 1);
+    }
 
 
+    /// a callback may subscribe/dispatch from inside a callback without deadlocking
+    void reentrantCallback()
+    {
+        TestModule cModule;
+        int iCalls = 0;
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&)
+        {
+            ++iCalls;
+            cModule.subscribeToEvtByName("TEST_EVENT_2", [&](const GitlEvent&){ ++iCalls; return true; });
+            cModule.dispatchEvt(GitlEvent("TEST_EVENT_2"));
+            return true;
+        });
+        cModule.dispatchEvt(GitlEvent("TEST_EVENT_1"));
+        QCOMPARE(iCalls, 2);
+    }
 
+    /// 1.3: callbacks of a module created in a worker thread run in that thread
+    void crossThreadDelivery()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+
+        std::atomic<int> iCalls(0);
+        std::atomic<QThread*> pcCallbackThread(nullptr);
+        GitlModule* pcModule = nullptr;
+
+        /// create the module in the worker thread so its delegate lives there
+        QMetaObject::invokeMethod(&cContext, [&]()
+        {
+            pcModule = new GitlModule(pcBus);
+            pcModule->subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent& rcEvt)
+            {
+                Q_UNUSED(rcEvt)
+                pcCallbackThread = QThread::currentThread();
+                ++iCalls;
+                return true;
+            });
+        }, Qt::BlockingQueuedConnection);
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);   ///< posted from the main thread
+        QTRY_COMPARE(iCalls.load(), 1);
+        QVERIFY(pcCallbackThread.load() == &cThread);
+
+        QMetaObject::invokeMethod(&cContext, [&](){ delete pcModule; }, Qt::BlockingQueuedConnection);
+        cThread.quit();
+        cThread.wait();
+    }
 
 #ifdef QT_NO_DEBUG
     /// 1.2: an event subclass without CLONABLE is rejected instead of being sliced

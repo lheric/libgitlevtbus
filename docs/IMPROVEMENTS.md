@@ -26,9 +26,9 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [x] Fix the doc comment in `gitlevent.h`. It tells users to add `VIRTUAL_COPY_PATTERN(...)`, but that macro doesn't exist; the real one is `CLONABLE(...)`.
 
 ### 1.3 The "cross-thread" feature isn't thread-safe
-- [ ] `m_cListeningEvts` (`src/gitlmoduledelegate.h:98`) is a plain `QMap` with no lock. `subscribeToEvtByName` can write it on one thread while `detonate` reads it on another, which is a data race. Guard it with a `QMutex` or `QReadWriteLock`.
-- [ ] One cloned event is shared by every subscriber through a `QSharedPointer`, and callbacks get a **non-const** `GitlEvent&`. Subscribers on different threads can therefore mutate the same event at the same time, and one can change what the others see. Change `GitlCallBack` to `std::function<bool(const GitlEvent&)>`.
-- [ ] Destruction race: a module subclass destroys its own members before the base `GitlModule` destroys `m_cDelegate`. A callback that fires on another thread during that window reaches a half-destroyed object. Have `~GitlModule()` call `detach()` first, and document that subclasses used across threads should also detach in their own destructor.
+- [x] `m_cListeningEvts` (`src/gitlmoduledelegate.h:98`) is a plain `QMap` with no lock. `subscribeToEvtByName` can write it on one thread while `detonate` reads it on another, which is a data race. Guard it with a `QMutex` or `QReadWriteLock`.
+- [x] One cloned event is shared by every subscriber through a `QSharedPointer`, and callbacks get a **non-const** `GitlEvent&`. Subscribers on different threads can therefore mutate the same event at the same time, and one can change what the others see. Change `GitlCallBack` to `std::function<bool(const GitlEvent&)>`.
+- [x] Destruction race: a module subclass destroys its own members before the base `GitlModule` destroys `m_cDelegate`. A callback that fires on another thread during that window reaches a half-destroyed object. Have `~GitlModule()` call `detach()` first, and document that subclasses used across threads should also detach in their own destructor.
 
 ### 1.4 Dangling bus pointer
 - [ ] `GitlEventBus::create()` returns a raw pointer with no stated owner, and modules keep a plain `GitlEventBus*`. Deleting the bus leaves every attached module pointing at freed memory. Store a `QPointer<GitlEventBus>`, or have the bus detach its modules when it's destroyed. Document who owns a bus returned by `create()`.

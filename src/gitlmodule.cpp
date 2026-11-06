@@ -29,7 +29,13 @@
 
 GitlModule::GitlModule(GitlEventBus *pcEventBus) :
     m_cDelegate(this, pcEventBus)
-{    
+{
+}
+
+GitlModule::~GitlModule()
+{
+    m_cDelegate.detach();
+    m_cDelegate.clearSubscriptions();
 }
 
 void GitlModule::subscribeToEvtByName( const QString& strEvtName,
@@ -43,7 +49,7 @@ void GitlModule::unsubscribeToEvtByName( const QString& strEvtName )
     return m_cDelegate.unsubscribeToEvtByName(strEvtName);
 }
 
-void GitlModule::dispatchEvt( GitlEvent& rcEvt )
+void GitlModule::dispatchEvt( const GitlEvent& rcEvt )
 {
     m_cDelegate.dispatchEvt(rcEvt);
 }

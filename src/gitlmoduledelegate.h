@@ -39,16 +39,21 @@ class GitlModule;
 class GitlEventBus;
 
 ///
-/// \brief GitlCallBack gitl event callback function
+/// \brief GitlCallBack gitl event callback function.
+/// The event is shared by every listener (possibly on different threads),
+/// so it is passed as const.
 ///
-typedef std::function<bool (GitlEvent&)> GitlCallBack;
+typedef std::function<bool (const GitlEvent&)> GitlCallBack;
 
 class GitlModuleDelegate : public QObject
 {
     Q_OBJECT
     friend class GitlModule;
 private:
-    explicit GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus *pcEventBus = NULL);
+    explicit GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus *pcEventBus = nullptr);
+
+    /// remove every subscription; used when the owning module is destroyed
+    void clearSubscriptions();
 
 public:
     /*!
@@ -83,6 +88,12 @@ public:
      */
     void attach(GitlEventBus *pcEventBus);
 
+    /*!
+     * \brief getGitlEvtBus the bus this module is attached to, or nullptr if it
+     *        is detached
+     */
+    GitlEventBus* getGitlEvtBus() const;
+
 public slots:
     /*!
      * \brief detonate notifyed by event bus
@@ -96,9 +107,15 @@ protected:
 
     ADD_CLASS_FIELD( QString, strModuleName, getModuleName, setModuleName )
     ADD_CLASS_FIELD_PRIVATE( CONCATE(QMap<QString, GitlCallBack>), cListeningEvts )
-    ADD_CLASS_FIELD_NOSETTER( GitlEventBus*, pcGitlEvtBus, getGitlEvtBus )
     ADD_CLASS_FIELD_PRIVATE(GitlModule*, pcDelegator)
-    
+
+private:
+    GitlEventBus* m_pcGitlEvtBus;
+
+    /// guards m_cListeningEvts and m_pcGitlEvtBus, which may be touched from
+    /// a thread other than the one this object lives in
+    mutable QMutex m_cMutex;
+
 };
 
 #endif // GITLMODULEDELEGATE_H
