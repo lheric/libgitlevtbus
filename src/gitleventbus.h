@@ -49,7 +49,9 @@ private:
 public:
     /*!
      * \brief create The safe way to explictly create a new event bus
-     * \return
+     * \return A new event bus owned by the caller, who must delete it.
+     *         Deleting a bus is safe while modules are still attached:
+     *         they are disconnected and their getEventBus() returns nullptr.
      */
     static GitlEventBus *create();
 

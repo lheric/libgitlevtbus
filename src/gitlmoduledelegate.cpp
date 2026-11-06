@@ -66,6 +66,8 @@ bool GitlModuleDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
     GitlCallBack pfListener;
     {
         QMutexLocker cLocker(&m_cMutex);
+        if( m_pcGitlEvtBus.isNull() )    ///< detached: drop events still queued from the old bus
+            return false;
         auto p = m_cListeningEvts.constFind(pcEvt->getEvtName());
         if( p == m_cListeningEvts.constEnd() )
             return true;
@@ -92,15 +94,15 @@ void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
 GitlEventBus* GitlModuleDelegate::getGitlEvtBus() const
 {
     QMutexLocker cLocker(&m_cMutex);
-    return m_pcGitlEvtBus;
+    return m_pcGitlEvtBus.data();
 }
 
 void GitlModuleDelegate::detach()
 {
     QMutexLocker cLocker(&m_cMutex);
-    if(m_pcGitlEvtBus != nullptr)
+    if(!m_pcGitlEvtBus.isNull())
         m_pcGitlEvtBus->unregisterModule(this);
-    m_pcGitlEvtBus = nullptr;
+    m_pcGitlEvtBus.clear();
 }
 
 void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
@@ -108,7 +110,7 @@ void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
     if(pcEventBus == nullptr)
         return;
     QMutexLocker cLocker(&m_cMutex);
-    if(m_pcGitlEvtBus != nullptr)
+    if(!m_pcGitlEvtBus.isNull())
         m_pcGitlEvtBus->unregisterModule(this);
     m_pcGitlEvtBus = pcEventBus;
     m_pcGitlEvtBus->registerModule(this);

@@ -31,7 +31,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [x] Destruction race: a module subclass destroys its own members before the base `GitlModule` destroys `m_cDelegate`. A callback that fires on another thread during that window reaches a half-destroyed object. Have `~GitlModule()` call `detach()` first, and document that subclasses used across threads should also detach in their own destructor.
 
 ### 1.4 Dangling bus pointer
-- [ ] `GitlEventBus::create()` returns a raw pointer with no stated owner, and modules keep a plain `GitlEventBus*`. Deleting the bus leaves every attached module pointing at freed memory. Store a `QPointer<GitlEventBus>`, or have the bus detach its modules when it's destroyed. Document who owns a bus returned by `create()`.
+- [x] `GitlEventBus::create()` returns a raw pointer with no stated owner, and modules keep a plain `GitlEventBus*`. Deleting the bus leaves every attached module pointing at freed memory. Store a `QPointer<GitlEventBus>`, or have the bus detach its modules when it's destroyed. Document who owns a bus returned by `create()`.
 
 ### 1.5 Subscribing twice silently replaces the first callback — `src/gitlmoduledelegate.cpp:47`
 - [ ] `QMap::insert` overwrites the existing callback. Either document "one handler per event per module" or switch to `QMultiMap` or a list.

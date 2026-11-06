@@ -89,7 +89,7 @@ public:
 
     /**
      * @brief getEventBus Get the event bus that this module is attached to
-     * @return
+     * @return the bus, or nullptr if the module is detached or the bus was deleted
      */
     GitlEventBus* getEventBus();
 

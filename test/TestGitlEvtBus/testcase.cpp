@@ -241,7 +241,40 @@ private slots:
 
     }
 
+    /// 1.4: deleting a bus must not leave modules with a dangling pointer
+    void deletedBusIsSafe()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        TestModule cModule(pcBus);
+        cModule.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule, TestModule::callback));
+        QVERIFY(cModule.getEventBus() == pcBus);
 
+        delete pcBus;
+        QVERIFY(cModule.getEventBus() == nullptr);
+
+        cModule.dispatchEvt(GitlEvent("TEST_EVENT_1"));    ///< must not crash
+        QVERIFY(!cModule.getNotified());
+
+        cModule.detach();                                  ///< must not crash either
+    }
+
+    /// a detached module receives nothing; re-attaching keeps its subscriptions
+    void detachAndReattach()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        TestModule cModule(pcBus);
+        cModule.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule, TestModule::callback));
+
+        cModule.detach();
+        QVERIFY(cModule.getEventBus() == nullptr);
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QVERIFY(!cModule.getNotified());
+
+        cModule.attach(pcBus);
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QVERIFY(cModule.getNotified());
+    }
 
     /// 1.3: a destroyed module is disconnected and its callbacks are not called
     void destroyedModuleIsDisconnected()

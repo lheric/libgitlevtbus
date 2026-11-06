@@ -31,6 +31,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSharedPointer>
+#include <QPointer>
 #include <functional>
 #include "gitldef.h"
 #include "gitlevent.h"
@@ -90,7 +91,7 @@ public:
 
     /*!
      * \brief getGitlEvtBus the bus this module is attached to, or nullptr if it
-     *        is detached
+     *        is detached or the bus has been deleted
      */
     GitlEventBus* getGitlEvtBus() const;
 
@@ -110,7 +111,8 @@ protected:
     ADD_CLASS_FIELD_PRIVATE(GitlModule*, pcDelegator)
 
 private:
-    GitlEventBus* m_pcGitlEvtBus;
+    /// QPointer becomes null automatically if the bus is deleted
+    QPointer<GitlEventBus> m_pcGitlEvtBus;
 
     /// guards m_cListeningEvts and m_pcGitlEvtBus, which may be touched from
     /// a thread other than the one this object lives in
