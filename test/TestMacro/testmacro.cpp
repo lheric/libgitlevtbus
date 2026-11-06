@@ -78,6 +78,35 @@ private slots:
 
     }
 
+    /// SCOPE_EXIT: several guards in one scope compile and each runs exactly once
+    void test_SCOPE_EXIT()
+    {
+        int* piA = new int(0);
+        int* piB = new int(0);
+        {
+            SCOPE_EXIT(++*piA);
+            SCOPE_EXIT(++*piB);
+            QCOMPARE(*piA, 0);
+            QCOMPARE(*piB, 0);
+        }
+        QCOMPARE(*piA, 1);
+        QCOMPARE(*piB, 1);
+        delete piA;
+        delete piB;
+    }
+
+    /// a moved-from guard is disarmed, so the callable never runs twice
+    void test_ScopeExit_move()
+    {
+        int iCount = 0;
+        {
+            auto cGuard = MakeScopeExit([&](){ ++iCount; });
+            auto cMoved = std::move(cGuard);
+            Q_UNUSED(cMoved)
+        }
+        QCOMPARE(iCount, 1);
+    }
+
 
 
 };

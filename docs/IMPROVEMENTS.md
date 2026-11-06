@@ -9,13 +9,13 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 ## 1. Correctness bugs (high priority)
 
 ### 1.1 `SCOPE_EXIT` is broken — `src/gitldef.h:153-164`
-- [ ] `scope_exit_##__LINE__` does not expand `__LINE__`, because `##` stops macro expansion. Every use declares the same variable, `scope_exit___LINE__`, so two `SCOPE_EXIT`s in one scope won't compile. Fix it with a two-level concatenation helper:
+- [x] `scope_exit_##__LINE__` does not expand `__LINE__`, because `##` stops macro expansion. Every use declares the same variable, `scope_exit___LINE__`, so two `SCOPE_EXIT`s in one scope won't compile. Fix it with a two-level concatenation helper:
   ```cpp
   #define GITL_CAT_(a, b) a##b
   #define GITL_CAT(a, b)  GITL_CAT_(a, b)
   #define SCOPE_EXIT(code) auto GITL_CAT(scope_exit_, __LINE__) = MakeScopeExit([=](){code;})
   ```
-- [ ] `ScopeExit` is copyable, and `MakeScopeExit` returns it by value. Before C++17 the compiler doesn't have to elide that copy, so the cleanup code can run twice. Delete the copy constructor and add a move constructor that disarms the source, or require C++17.
+- [x] `ScopeExit` is copyable, and `MakeScopeExit` returns it by value. Before C++17 the compiler doesn't have to elide that copy, so the cleanup code can run twice. Delete the copy constructor and add a move constructor that disarms the source, or require C++17.
 
 ### 1.2 A missing `CLONABLE` silently slices events — `src/gitleventbus.cpp:63`, `src/gitlevent.h:39-47`
 - [ ] `post()` copies the event with `rcEvt.clone()`. If a subclass forgets `CLONABLE(...)`, the copy is a plain `GitlEvent`, and a listener's `static_cast<CustomEvent&>` is undefined behaviour. Add a guard in `post()`:

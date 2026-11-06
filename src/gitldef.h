@@ -26,6 +26,7 @@
 #ifndef GITLDEF_H
 #define GITLDEF_H
 #include <functional>
+#include <utility>
 #include <QMutex>
 #include <QMutexLocker>
 
@@ -150,18 +151,31 @@
 #define VALUE_CLIP(min,max,value) ( ((value)>(max))?(max):((value)<(min))?(min):(value) )
 
 /* SCOPE GUARD C++11 Required*/
+/// Runs the stored callable exactly once, when the guard leaves scope.
+/// Copying is disabled; a moved-from guard is disarmed so the callable
+/// never runs twice (pre-C++17 compilers may move instead of eliding).
 template <typename F>
-struct ScopeExit {
-    ScopeExit(F f) : f(f) {}
-    ~ScopeExit() { f(); }
-    F f;
+class ScopeExit {
+public:
+    explicit ScopeExit(F f) : m_f(std::move(f)), m_bActive(true) {}
+    ScopeExit(ScopeExit&& rhs) : m_f(std::move(rhs.m_f)), m_bActive(rhs.m_bActive) { rhs.m_bActive = false; }
+    ScopeExit(const ScopeExit&) = delete;
+    ScopeExit& operator=(const ScopeExit&) = delete;
+    ScopeExit& operator=(ScopeExit&&) = delete;
+    ~ScopeExit() { if(m_bActive) m_f(); }
+private:
+    F m_f;
+    bool m_bActive;
 };
 template <typename F>
 ScopeExit<F> MakeScopeExit(F f) {
-    return ScopeExit<F>(f);
+    return ScopeExit<F>(std::move(f));
 }
+/// two-level concatenation so that __LINE__ is expanded before pasting
+#define GITL_CAT_IMPL(a, b) a##b
+#define GITL_CAT(a, b) GITL_CAT_IMPL(a, b)
 #define SCOPE_EXIT(code) \
-    auto scope_exit_##__LINE__ = MakeScopeExit([=](){code;})
+    auto GITL_CAT(scope_exit_, __LINE__) = MakeScopeExit([=](){code;})
 
 
 /*make callback functor*/
