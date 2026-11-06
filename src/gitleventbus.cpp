@@ -25,6 +25,7 @@
  *******************************************************************************************/
 #include "gitleventbus.h"
 #include <QDebug>
+#include <typeinfo>
 
 SINGLETON_PATTERN_IMPLIMENT(GitlEventBus)
 
@@ -62,6 +63,17 @@ void GitlEventBus::post(const GitlEvent& rcEvt) const
 {    
     QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
 
+    /// A subclass without CLONABLE(...) is sliced to its base class by clone(),
+    /// and listeners that downcast it would hit undefined behaviour.
+    const GitlEvent& rcEvtCopy = *pcEvtCopy;
+    if( typeid(rcEvtCopy) != typeid(rcEvt) )
+    {
+        qCritical("GitlEventBus::post: event '%s' of type '%s' was cloned as '%s'. "
+                  "Add CLONABLE(...) to the event subclass. The event was not dispatched.",
+                  qPrintable(rcEvt.getEvtName()), typeid(rcEvt).name(), typeid(rcEvtCopy).name());
+        Q_ASSERT_X(false, "GitlEventBus::post", "event subclass is missing CLONABLE(...)");
+        return;
+    }
 
     /// notify modules
     emit eventTriggered(pcEvtCopy);

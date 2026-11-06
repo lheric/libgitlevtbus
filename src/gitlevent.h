@@ -38,8 +38,9 @@ class GitlEventBus;
  * \brief The GitlEvent class represents an event.
  *  If you want to create an custom event by inherit GitlEvent, you ***MUST***
  *  reimplement the 'clone' method in this class. This can be done by adding
- *  VIRTUAL_COPY_PATTERN(subclassname) in the subclass. Otherwise the application
- *  may crash
+ *  CLONABLE(subclassname) in the subclass. Otherwise the event is sliced when it
+ *  is copied onto the bus; GitlEventBus::post() detects this, logs an error and
+ *  drops the event (and asserts in debug builds).
  */
 class GitlEvent
 {

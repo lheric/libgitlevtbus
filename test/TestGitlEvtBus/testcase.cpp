@@ -30,6 +30,7 @@
 #include <QSharedPointer>
 #include <QString>
 #include <functional>
+#include <QRegularExpression>
 #include "gitldef.h"
 #include "gitlmodule.h"
 #include "gitleventbus.h"
@@ -237,6 +238,32 @@ private slots:
         QVERIFY(cModule5.getNotified());
 
     }
+
+
+
+
+
+
+
+#ifdef QT_NO_DEBUG
+    /// 1.2: an event subclass without CLONABLE is rejected instead of being sliced
+    /// (debug builds assert instead, so this only runs in release)
+    void missingClonableIsRejected()
+    {
+        class NotClonableEvent : public GitlEvent
+        {
+        public:
+            NotClonableEvent() : GitlEvent("TEST_EVENT_1") {}
+        };
+
+        TestModule cModule;
+        cModule.subscribeInsideClass();
+        QTest::ignoreMessage(QtCriticalMsg, QRegularExpression("Add CLONABLE"));
+        NotClonableEvent cEvt;
+        cModule.dispatchEvt(cEvt);
+        QVERIFY(!cModule.getNotified());
+    }
+#endif
 };
 
 

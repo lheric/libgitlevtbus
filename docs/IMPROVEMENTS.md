@@ -18,12 +18,12 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [x] `ScopeExit` is copyable, and `MakeScopeExit` returns it by value. Before C++17 the compiler doesn't have to elide that copy, so the cleanup code can run twice. Delete the copy constructor and add a move constructor that disarms the source, or require C++17.
 
 ### 1.2 A missing `CLONABLE` silently slices events — `src/gitleventbus.cpp:63`, `src/gitlevent.h:39-47`
-- [ ] `post()` copies the event with `rcEvt.clone()`. If a subclass forgets `CLONABLE(...)`, the copy is a plain `GitlEvent`, and a listener's `static_cast<CustomEvent&>` is undefined behaviour. Add a guard in `post()`:
+- [x] `post()` copies the event with `rcEvt.clone()`. If a subclass forgets `CLONABLE(...)`, the copy is a plain `GitlEvent`, and a listener's `static_cast<CustomEvent&>` is undefined behaviour. Add a guard in `post()`:
   ```cpp
   Q_ASSERT_X(typeid(*pcEvtCopy) == typeid(rcEvt), "GitlEventBus::post",
              "Event subclass is missing CLONABLE(...)");
   ```
-- [ ] Fix the doc comment in `gitlevent.h`. It tells users to add `VIRTUAL_COPY_PATTERN(...)`, but that macro doesn't exist; the real one is `CLONABLE(...)`.
+- [x] Fix the doc comment in `gitlevent.h`. It tells users to add `VIRTUAL_COPY_PATTERN(...)`, but that macro doesn't exist; the real one is `CLONABLE(...)`.
 
 ### 1.3 The "cross-thread" feature isn't thread-safe
 - [ ] `m_cListeningEvts` (`src/gitlmoduledelegate.h:98`) is a plain `QMap` with no lock. `subscribeToEvtByName` can write it on one thread while `detonate` reads it on another, which is a data race. Guard it with a `QMutex` or `QReadWriteLock`.
