@@ -12,4 +12,8 @@
 *.la
 *.a
 
+# Qt Creator user settings
 *.user
+
+# Build directories
+build/
