@@ -10,7 +10,7 @@ QT       -= gui
 
 TARGET = TestMacro
 CONFIG   += console
-CONFIG   += c++11
+CONFIG   += c++17
 CONFIG   -= app_bundle
 
 TEMPLATE = app

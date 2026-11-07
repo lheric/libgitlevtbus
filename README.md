@@ -6,15 +6,16 @@ libgitlevtbus is an open-source event bus (or message bus) based on Qt under BSD
 
 Features
 ========
-1. Easy to use (c++11 feature supported: lambda expression, member function callback, ...)
+1. Easy to use (modern C++: lambda expressions, member function callbacks, ...)
 2. Custom event support (carry custom parameters)
 3. Events can be deliverd across threads
 
 Requirements
 ============
-Qt 5.1.0 or later with MSVC, gcc or intel complier
+- **Qt 5.15 or Qt 6.** Only the Qt Core module is used.
+- **A C++17 compiler**, such as GCC, Clang or MSVC.
 
-**c++11 support required**
+CI builds and tests Qt 5.15 and Qt 6.8 on Linux (GCC), macOS (Clang) and Windows (MSVC).
 
 Quick start
 ===========

@@ -68,7 +68,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 ## 4. Build and CI (medium priority)
 
 - [ ] **Include paths depend on the folder name.** `INCLUDEPATH += ../../libgitlevtbus/src` in `examples/examples.pro:21` and `test/TestGitlEvtBus/TestGitlEvtBus.pro:18` only works if the repo is cloned into a folder named `libgitlevtbus`. Use `$$PWD/../src` or `$$PWD/../../src`.
-- [ ] **`src/src.pro`:** remove the duplicate `CONFIG += c++11`, and `CONFIG += console`, which means nothing for a static library. (`QT += widgets` and the default `gui` module are already removed; the library is core-only.)
+- [ ] **`src/src.pro`:** remove `CONFIG += console`, which means nothing for a static library. (`QT += widgets`, the default `gui` module and the duplicate C++ standard line are already removed; the library is core-only and built as C++17.)
 - [ ] **Legacy settings:** `CONFIG += ordered` is deprecated. Replace it with `.depends`.
 - [ ] **Signal/slot setup:**
   - Switch to the new-style `connect(this, &GitlEventBus::eventTriggered, pcModule, &GitlModuleDelegate::detonate)` to get compile-time checking.
@@ -94,7 +94,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [ ] Fix the README typos: "lisence", "deliverd", "complier".
 - [ ] The README points to `test/testcase.cpp`; the file is actually `test/TestGitlEvtBus/testcase.cpp`.
 - [x] Replace the dead Travis badge with a GitHub Actions badge.
-- [ ] Replace "Qt 5.1.0 or later" with the Qt versions CI actually covers.
+- [x] Replace "Qt 5.1.0 or later" with the Qt versions CI actually covers. (The README now requires Qt 5.15 or Qt 6 and C++17.)
 - [ ] Document the threading model: callbacks run on the thread where the module was created, and that thread needs a running event loop.
 
 ---

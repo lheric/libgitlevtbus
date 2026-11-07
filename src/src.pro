@@ -7,7 +7,7 @@
 QT       += core
 QT       -= gui
 
-CONFIG   += c++11
+CONFIG   += c++17
 CONFIG(debug, debug|release){
     TARGET = GitlEvtBusd
 }
@@ -17,8 +17,6 @@ CONFIG(release, debug|release){
 
 DESTDIR = $${OUT_PWD}/..
 
-# c++11 enalbed
-CONFIG += c++11
 CONFIG += console
 CONFIG += staticlib
 CONFIG -= app_bundle
