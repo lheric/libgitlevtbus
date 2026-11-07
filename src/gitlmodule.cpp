@@ -73,3 +73,13 @@ void GitlModule::attach(GitlEventBus *pcEventBus)
 {
     m_cDelegate.attach(pcEventBus);
 }
+
+void GitlModule::moveModuleToThread(QThread *pcThread)
+{
+    m_cDelegate.moveToThread(pcThread);
+}
+
+QThread *GitlModule::moduleThread() const
+{
+    return m_cDelegate.thread();
+}

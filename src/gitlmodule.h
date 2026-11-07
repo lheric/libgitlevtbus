@@ -36,9 +36,15 @@
 #include "gitlmoduledelegate.h"
 
 class GitlEventBus;
+class QThread;
 
 /*!
- * \brief The GitlModule class represents a module
+ * \brief The GitlModule class represents a module.
+ *
+ * Threading: callbacks always run on the thread the module lives in, which is
+ * the thread that created it unless it is moved with moveModuleToThread(). Events
+ * posted from another thread are queued, so that thread must run a Qt event
+ * loop (e.g. QThread::exec(), which QThread::run() calls by default).
  */
 
 class GitlModule
@@ -54,7 +60,7 @@ public:
 
     /*!
      * \brief ~GitlModule Detaches from the bus and drops all subscriptions.
-     * Callbacks run on the thread the module was created in. If a subclass's
+     * Callbacks run on the thread the module lives in. If a subclass's
      * callbacks use its own members and the module can be destroyed from another
      * thread, call detach() at the start of the subclass destructor.
      */
@@ -104,6 +110,21 @@ public:
      * \param pcEventBus
      */
     void attach(GitlEventBus *pcEventBus);
+
+    /*!
+     * \brief moveModuleToThread Make this module's callbacks run on another thread.
+     * GitlModule is not a QObject, so if a subclass is also a QObject, its own
+     * QObject::moveToThread() does NOT move the module's callbacks; call this too.
+     * Like QObject::moveToThread(), it must be called from the thread the module
+     * currently lives in.
+     * \param pcThread target thread; it needs a running event loop to receive events
+     */
+    void moveModuleToThread(QThread *pcThread);
+
+    /*!
+     * \brief moduleThread The thread this module's callbacks run on
+     */
+    QThread* moduleThread() const;
 
 
     /// Delegate pattern

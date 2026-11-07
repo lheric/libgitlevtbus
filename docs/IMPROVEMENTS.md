@@ -95,7 +95,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 - [ ] The README points to `test/testcase.cpp`; the file is actually `test/TestGitlEvtBus/testcase.cpp`.
 - [x] Replace the dead Travis badge with a GitHub Actions badge.
 - [x] Replace "Qt 5.1.0 or later" with the Qt versions CI actually covers. (The README now requires Qt 5.15 or Qt 6 and C++17.)
-- [ ] Document the threading model: callbacks run on the thread where the module was created, and that thread needs a running event loop.
+- [x] Document the threading model: callbacks run on the thread where the module was created, and that thread needs a running event loop. (README "Threading" section; `GitlModule::moveModuleToThread()` added so a module can change threads.)
 
 ---
 

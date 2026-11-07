@@ -31,6 +31,9 @@
 #include <QString>
 #include <functional>
 #include <atomic>
+#include <memory>
+#include <thread>
+#include <vector>
 #include <QThread>
 #include <QRegularExpression>
 #include "gitldef.h"
@@ -354,6 +357,172 @@ private slots:
         QMetaObject::invokeMethod(&cContext, [&](){ delete pcModule; }, Qt::BlockingQueuedConnection);
         cThread.quit();
         cThread.wait();
+    }
+
+    /// moveModuleToThread() makes a module created on the main thread run its callbacks on a worker
+    void moveModuleToThread()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+
+        std::atomic<int> iCalls(0);
+        std::atomic<QThread*> pcCallbackThread(nullptr);
+
+        GitlModule cModule(pcBus);
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&)
+        {
+            pcCallbackThread = QThread::currentThread();
+            ++iCalls;
+            return true;
+        });
+        QVERIFY(cModule.moduleThread() == QThread::currentThread());
+
+        cModule.moveModuleToThread(&cThread);
+        QVERIFY(cModule.moduleThread() == &cThread);
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);   ///< posted from the main thread
+        QTRY_COMPARE(iCalls.load(), 1);
+        QVERIFY(pcCallbackThread.load() == &cThread);
+
+        /// move it back from the thread it now lives in, before that thread stops
+        QThread* pcMainThread = QThread::currentThread();
+        QMetaObject::invokeMethod(&cContext, [&](){ cModule.moveModuleToThread(pcMainThread); },
+                                  Qt::BlockingQueuedConnection);
+        QVERIFY(cModule.moduleThread() == pcMainThread);
+        cThread.quit();
+        cThread.wait();
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);   ///< same thread again: delivered directly
+        QCOMPARE(iCalls.load(), 2);
+        QVERIFY(pcCallbackThread.load() == pcMainThread);
+    }
+
+    /// several modules, each on its own worker thread, receive every event exactly once
+    /// on their own thread while several threads dispatch and (un)subscribe concurrently
+    void multipleWorkers()
+    {
+        const int iWorkers = 4;
+        const int iSenders = 4;               ///< main thread + 3 std::threads
+        const int iEventsPerSender = 200;
+        const int iExpected = iSenders * iEventsPerSender;
+
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        struct Stats { std::atomic<int> iCalls{0}; std::atomic<int> iWrongThread{0}; };
+        std::vector<std::unique_ptr<QThread>>    vcThreads;
+        std::vector<std::unique_ptr<Stats>>      vcStats;
+        std::vector<std::unique_ptr<GitlModule>> vcModules;
+        std::vector<std::thread>                 vcSenders;
+        std::atomic<bool>                        bStop(false);
+        std::thread                              cSubscriber;
+
+        /// runs even if a QVERIFY fails, so no thread is destroyed while running
+        auto cCleanup = MakeScopeExit([&]()
+        {
+            bStop = true;
+            if(cSubscriber.joinable()) cSubscriber.join();
+            for(auto& t : vcSenders) if(t.joinable()) t.join();
+            for(auto& m : vcModules) m->detach();
+            for(auto& t : vcThreads) { t->quit(); t->wait(); }
+            vcModules.clear();
+            vcThreads.clear();
+        });
+
+        for(int i = 0; i < iWorkers; ++i)
+        {
+            vcThreads.emplace_back(new QThread);
+            vcThreads.back()->start();
+            vcStats.emplace_back(new Stats);
+            vcModules.emplace_back(new GitlModule(pcBus));
+
+            QThread* pcThread = vcThreads.back().get();
+            Stats* pcStats = vcStats.back().get();
+            vcModules.back()->subscribeToEvtByName("TEST_EVENT_1", [=](const GitlEvent& rcEvt)
+            {
+                if(QThread::currentThread() != pcThread || rcEvt.getEvtName() != "TEST_EVENT_1")
+                    ++pcStats->iWrongThread;
+                ++pcStats->iCalls;
+                return true;
+            });
+            vcModules.back()->moveModuleToThread(pcThread);
+        }
+
+        /// concurrent subscribe/unsubscribe of another event while events are flowing
+        cSubscriber = std::thread([&]()
+        {
+            while(!bStop)
+                for(auto& m : vcModules)
+                {
+                    m->subscribeToEvtByName("OTHER_EVENT", [](const GitlEvent&){ return true; });
+                    m->unsubscribeToEvtByName("OTHER_EVENT");
+                }
+        });
+
+        for(int s = 1; s < iSenders; ++s)
+            vcSenders.emplace_back([=]()
+            {
+                for(int i = 0; i < iEventsPerSender; ++i)
+                    GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+            });
+        for(int i = 0; i < iEventsPerSender; ++i)
+            GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        for(auto& t : vcSenders) t.join();
+
+        for(int i = 0; i < iWorkers; ++i)
+            QTRY_COMPARE_WITH_TIMEOUT(vcStats[i]->iCalls.load(), iExpected, 10000);
+
+        bStop = true;
+        cSubscriber.join();
+
+        QTest::qWait(50);   ///< nothing extra may arrive later
+        for(int i = 0; i < iWorkers; ++i)
+        {
+            QCOMPARE(vcStats[i]->iCalls.load(), iExpected);
+            QCOMPARE(vcStats[i]->iWrongThread.load(), 0);
+        }
+    }
+
+    /// a class can derive from both QObject and GitlModule: QObject's thread()
+    /// and moveToThread() stay unambiguous, and both parts can be moved together
+    void qobjectSubclass()
+    {
+        class Worker : public QObject, public GitlModule
+        {
+        public:
+            explicit Worker(GitlEventBus* pcBus) : GitlModule(pcBus) {}
+        };
+
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        cThread.start();
+
+        Worker cWorker(pcBus);
+        std::atomic<QThread*> pcCallbackThread(nullptr);
+        cWorker.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&)
+        {
+            pcCallbackThread = QThread::currentThread();
+            return true;
+        });
+
+        cWorker.moveToThread(&cThread);           ///< QObject part (unqualified call must compile)
+        cWorker.moveModuleToThread(&cThread);     ///< GitlModule part
+        QVERIFY(cWorker.thread() == &cThread);
+        QVERIFY(cWorker.moduleThread() == &cThread);
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QTRY_VERIFY(pcCallbackThread.load() == &cThread);
+
+        cThread.quit();
+        cThread.wait();
+        cWorker.detach();   ///< its thread has stopped; nothing more to deliver
     }
 
 #ifdef QT_NO_DEBUG
