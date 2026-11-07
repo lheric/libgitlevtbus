@@ -14,8 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  QT5_VERSION: '5.15.2'   # Windows only; Linux and macOS use the distro / Homebrew Qt 5
-  QT6_VERSION: '6.8.3'    # Qt 6 LTS
+  QT5_VERSION: '5.15.2'         # Windows only; Linux and macOS use the distro / Homebrew Qt 5
+  QT6_VERSION: '6.8.3'          # Qt 6 LTS (last open-source 6.8 release), Linux and Windows
+  # Qt 6.8.3's qyieldcpu.h calls __yield() without declaring it, which current Apple
+  # Clang (Xcode 16.3+) rejects on arm64. Newer Qt fixes the header, so macOS uses it.
+  QT6_VERSION_MACOS: '6.11.3'
 
 jobs:
   build-and-test:
@@ -29,7 +32,7 @@ jobs:
         qt: ['5', '6']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # ---- Install Qt ----------------------------------------------------------
       - name: Install Qt 5 (Linux)
@@ -53,7 +56,7 @@ jobs:
         if: matrix.qt == '6' || runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ matrix.qt == '5' && env.QT5_VERSION || env.QT6_VERSION }}
+          version: ${{ matrix.qt == '5' && env.QT5_VERSION || (runner.os == 'macOS' && env.QT6_VERSION_MACOS || env.QT6_VERSION) }}
           arch: ${{ runner.os == 'Windows' && (matrix.qt == '5' && 'win64_msvc2019_64' || 'win64_msvc2022_64') || '' }}
           cache: true
 

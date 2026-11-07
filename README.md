@@ -15,7 +15,7 @@ Requirements
 - **Qt 5.15 or Qt 6.** Only the Qt Core module is used.
 - **A C++17 compiler**, such as GCC, Clang or MSVC.
 
-CI builds and tests Qt 5.15 and Qt 6.8 on Linux (GCC), macOS (Clang) and Windows (MSVC).
+CI builds and tests Qt 5.15 and Qt 6 on Linux (GCC), macOS (Clang) and Windows (MSVC). It uses Qt 6.8 LTS on Linux and Windows, and Qt 6.11 on macOS.
 
 Quick start
 ===========

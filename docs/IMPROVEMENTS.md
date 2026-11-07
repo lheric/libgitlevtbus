@@ -75,7 +75,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
   - Move `Q_DECLARE_METATYPE(QSharedPointer<GitlEvent>)` into the header.
   - Call `qRegisterMetaType` once instead of on every `registerModule`.
 - [x] **CI no longer runs.** Travis CI for open source is gone, and the config targets Ubuntu Trusty with an old Ubuntu SDK PPA. It also never ran the tests. Replaced with GitHub Actions (`.github/workflows/ci.yml`): Qt 5 on Linux, macOS and Windows, running the test binaries and the example.
-- [x] **Add Qt 6 to the CI matrix.** CI now builds and tests Qt 5 and Qt 6.8 (LTS) on Linux, macOS and Windows.
+- [x] **Add Qt 6 to the CI matrix.** CI now builds and tests Qt 5 and Qt 6 on Linux, macOS and Windows: Qt 6.8 LTS on Linux and Windows, Qt 6.11 on macOS, where Qt 6.8.3's headers don't compile with current Apple Clang.
 - [ ] **Consider CMake** (and optionally `find_package` support), since Qt 6 has moved away from qmake.
 
 ---
