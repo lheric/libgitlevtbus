@@ -36,6 +36,7 @@
 #include <vector>
 #include <QThread>
 #include <QRegularExpression>
+#include <QSemaphore>
 #include "gitldef.h"
 #include "gitlmodule.h"
 #include "gitleventbus.h"
@@ -194,8 +195,14 @@ private slots:
 
     void multiplyEventBus()
     {
-        GitlEventBus* pcBus1 = GitlEventBus::create(); TestModule cModule1(pcBus1); TestModule cModule2(pcBus1);
-        GitlEventBus* pcBus2 = GitlEventBus::create(); TestModule cModule3(pcBus2); TestModule cModule4(pcBus2);
+        /// the guards are declared before the modules, so the modules are destroyed first
+        GitlEventBus* pcBus1 = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus1);
+        GitlEventBus* pcBus2 = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus2);
+
+        TestModule cModule1(pcBus1); TestModule cModule2(pcBus1);
+        TestModule cModule3(pcBus2); TestModule cModule4(pcBus2);
 
         /// all module are listening to the same events, but on different event buses.
         cModule1.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule1, TestModule::callback));
@@ -400,6 +407,79 @@ private slots:
         GitlEvent("TEST_EVENT_1").dispatch(pcBus);   ///< same thread again: delivered directly
         QCOMPARE(iCalls.load(), 2);
         QVERIFY(pcCallbackThread.load() == pcMainThread);
+    }
+
+    /// deleting a module while events for it are still queued drops them safely
+    void deletedModuleDropsQueuedEvents()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+        auto cStop = MakeScopeExit([&](){ cThread.quit(); cThread.wait(); });
+
+        std::atomic<int> iDeletedCalls(0), iKeptCalls(0);
+        GitlModule* pcDeleted = new GitlModule(pcBus);
+        GitlModule* pcKept    = new GitlModule(pcBus);   ///< control: proves the events were queued
+        pcDeleted->subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iDeletedCalls; return true; });
+        pcKept   ->subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iKeptCalls;    return true; });
+        pcDeleted->moveModuleToThread(&cThread);
+        pcKept   ->moveModuleToThread(&cThread);
+
+        /// park the worker until the events below are queued, then delete one module
+        /// on its own thread while its events are still waiting in the queue
+        QSemaphore cPosted;
+        QMetaObject::invokeMethod(&cContext, [&]()
+        {
+            cPosted.acquire();
+            delete pcDeleted;
+        }, Qt::QueuedConnection);
+
+        for(int i = 0; i < 3; ++i)
+            GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QCOMPARE(iKeptCalls.load(), 0);              ///< still queued
+        cPosted.release();
+
+        QMetaObject::invokeMethod(&cContext, [](){}, Qt::BlockingQueuedConnection);   ///< drain the queue
+        QCOMPARE(iDeletedCalls.load(), 0);
+        QCOMPARE(iKeptCalls.load(), 3);
+
+        QMetaObject::invokeMethod(&cContext, [&](){ delete pcKept; }, Qt::BlockingQueuedConnection);
+    }
+
+    /// deleting the bus while events from it are still queued drops them safely
+    void deletedBusDropsQueuedEvents()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+        auto cStop = MakeScopeExit([&](){ cThread.quit(); cThread.wait(); });
+
+        std::atomic<int> iCalls(0);
+        GitlModule* pcModule = new GitlModule(pcBus);
+        pcModule->subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iCalls; return true; });
+        pcModule->moveModuleToThread(&cThread);
+
+        /// park the worker so the events stay queued
+        QSemaphore cPosted;
+        QMetaObject::invokeMethod(&cContext, [&](){ cPosted.acquire(); }, Qt::QueuedConnection);
+
+        for(int i = 0; i < 3; ++i)
+            GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        delete pcBus;
+        QVERIFY(pcModule->getEventBus() == nullptr);
+        cPosted.release();
+
+        QMetaObject::invokeMethod(&cContext, [](){}, Qt::BlockingQueuedConnection);   ///< drain the queue
+        QCOMPARE(iCalls.load(), 0);
+
+        QMetaObject::invokeMethod(&cContext, [&](){ delete pcModule; }, Qt::BlockingQueuedConnection);
     }
 
     /// several modules, each on its own worker thread, receive every event exactly once

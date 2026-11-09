@@ -70,12 +70,22 @@ private slots:
     {
         ExampleClass exampleClass;
 
-        bool bTriggered = false;
-        connect(&exampleClass, &ExampleClass::strRWInitChanged, [&](QString &strRWInitChanged){Q_UNUSED(strRWInitChanged); bTriggered = true;});
+        int iTriggered = 0;
+        QString strSignalled;
+        connect(&exampleClass, &ExampleClass::strRWInitChanged,
+                [&](QString &strRWInitChanged){ ++iTriggered; strSignalled = strRWInitChanged; });
+
+        /// through the property system
         exampleClass.setProperty("strRWInit","changed");
-
         QCOMPARE(exampleClass.getRWInit(), QString("changed"));
+        QCOMPARE(iTriggered, 1);
+        QCOMPARE(strSignalled, QString("changed"));
 
+        /// through the generated setter
+        exampleClass.setRWInit("changed again");
+        QCOMPARE(exampleClass.getRWInit(), QString("changed again"));
+        QCOMPARE(iTriggered, 2);
+        QCOMPARE(strSignalled, QString("changed again"));
     }
 
     /// SCOPE_EXIT: several guards in one scope compile and each runs exactly once

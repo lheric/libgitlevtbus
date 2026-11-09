@@ -82,10 +82,10 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
 
 ## 5. Tests (medium priority)
 
-- [ ] **`test_signals` checks nothing** (`test/TestMacro/testmacro.cpp:73-77`). It sets `bTriggered` but never asserts it, so the test passes even if the signal never fires. Add `QVERIFY(bTriggered)`.
-- [ ] **Add a cross-thread delivery test**, using a module that lives on a `QThread` and `QTRY_VERIFY`. This is the README's main claim and nothing tests it.
-- [ ] **Add the other missing cases:** `detach()`, deleting a bus or module while events are in flight, subscribing twice to one event, and a subclass that forgets `CLONABLE`.
-- [ ] **Fix the leak:** `multiplyEventBus` never deletes `pcBus1` or `pcBus2` (`test/TestGitlEvtBus/testcase.cpp:191-192`).
+- [x] **`test_signals` checks nothing** (`test/TestMacro/testmacro.cpp:73-77`). It sets `bTriggered` but never asserts it, so the test passes even if the signal never fires. Add `QVERIFY(bTriggered)`. (Now checks the signal fires once per change, with the new value, through both `setProperty()` and the setter.)
+- [x] **Add a cross-thread delivery test**, using a module that lives on a `QThread` and `QTRY_VERIFY`. This is the README's main claim and nothing tests it. (`crossThreadDelivery`, `moveModuleToThread`, `qobjectSubclass`, `multipleWorkers`.)
+- [x] **Add the other missing cases:** `detach()`, deleting a bus or module while events are in flight, subscribing twice to one event, and a subclass that forgets `CLONABLE`. (Including `deletedModuleDropsQueuedEvents` and `deletedBusDropsQueuedEvents` for events still queued.)
+- [x] **Fix the leak:** `multiplyEventBus` never deletes `pcBus1` or `pcBus2` (`test/TestGitlEvtBus/testcase.cpp:191-192`).
 
 ---
 
