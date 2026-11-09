@@ -45,7 +45,7 @@ Items are in priority order. Check one off when its fix is merged. Line numbers 
   - `GitlModule::dispatchEvt(GitlEvent&)` (`src/gitlmodule.h:73`) takes a non-const reference, so `dispatchEvt(GitlEvent("X"))` won't compile. It should take `const GitlEvent&`.
   - `GitlModule::getEventBus()` should be `const`.
   - `GitlEvent::hasParameter(QString)` and `GitlEventParam::hasParameter(QString)` copy their argument instead of taking a `const QString&`.
-- [ ] **Delivery scales poorly.** Every event is sent to every module on the bus, and each module then looks up the event name. If the bus kept a `QHash<QString, QList<subscriber>>`, an event would only reach the modules that subscribed to it.
+- [x] **Delivery scales poorly.** Every event is sent to every module on the bus, and each module then looks up the event name. If the bus kept a `QHash<QString, QList<subscriber>>`, an event would only reach the modules that subscribed to it. (Done without changing the public API. Benchmark with 100 modules, 1 subscriber: about 69x faster across threads and 16x faster on one thread.)
 - [ ] **Raw-string event names** make typos into silent no-ops. Consider recommending `static const QString` constants, or adding a typed `subscribe<EventT>()` overload.
 - [ ] **Noisy parameter lookup.** `getParameter` logs `qWarning` when a parameter is missing. Add an overload with a default value: `getParameter(name, defaultValue)`.
 - [ ] **Dead code:** remove `xIsListenToEvt` and `m_pcDelegator`, which are never used. `setParameter` always returns `true`; return `void` instead.

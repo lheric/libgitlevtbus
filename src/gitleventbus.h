@@ -27,6 +27,10 @@
 #define GITLEVENTBUS_H
 
 #include <QList>
+#include <QHash>
+#include <QSet>
+#include <QVector>
+#include <QStringList>
 #include <QObject>
 #include <QMutex>
 #include <QMutexLocker>
@@ -38,11 +42,17 @@
 
 class GitlModuleDelegate;
 /*!
- * \brief The GitlEventBus class represents the event bus
+ * \brief The GitlEventBus class represents the event bus.
+ *
+ * The bus keeps an index from event name to the modules subscribed to it, so
+ * posting an event only reaches those modules. Modules on the posting thread
+ * are called directly; modules on other threads get the event queued to their
+ * own thread. Modules that did not subscribe are not touched at all.
  */
 class GitlEventBus : public QObject
 {
     Q_OBJECT
+    friend class GitlModuleDelegate;
 private:
     GitlEventBus();
 
@@ -56,17 +66,19 @@ public:
     static GitlEventBus *create();
 
     /*!
-     * \brief registerModule connect a module to the event bus
+     * \brief registerModule connect a module to the event bus.
+     * Used internally by GitlModule; prefer GitlModule::attach().
      * \param pcModule
-     * \return
+     * \return false if pcModule is null
      */
     bool registerModule(GitlModuleDelegate *pcModule);
 
 
     /*!
-     * \brief unregisterModule disconncet a module from the event bus
+     * \brief unregisterModule disconncet a module from the event bus.
+     * Used internally by GitlModule; prefer GitlModule::detach().
      * \param pcModule
-     * \return
+     * \return true if the module was registered
      */
     bool unregisterModule(GitlModuleDelegate *pcModule);
 
@@ -76,13 +88,32 @@ public slots:
     void post(const GitlEvent &rcEvt) const;
 
 signals:
-    /*! message to send
+    /*! Emitted for every posted event, whatever its name. Modules do not use
+     *  this signal; it is only emitted when something else is connected to it,
+     *  e.g. for logging or debugging.
      */
     void eventTriggered( QSharedPointer<GitlEvent> pcEvt ) const;
 
 
     ///SINGLETON design pattern
     SINGLETON_PATTERN_DECLARE(GitlEventBus)
+
+private:
+    /// register a module together with the events it is already subscribed to
+    void xRegister(GitlModuleDelegate *pcModule, const QStringList &rcEvtNames);
+    /// remove a module and all its routes; true if it was registered
+    bool xUnregister(GitlModuleDelegate *pcModule);
+    /// a registered module subscribed to / unsubscribed from an event
+    void xAddRoute(GitlModuleDelegate *pcModule, const QString &strEvtName);
+    void xRemoveRoute(GitlModuleDelegate *pcModule, const QString &strEvtName);
+
+    /// guards the two indexes below; may be taken while a module's own mutex is
+    /// held (module -> bus), never the other way round
+    mutable QMutex m_cRouteMutex;
+    /// event name -> subscribed modules, in subscription order
+    QHash<QString, QVector<GitlModuleDelegate*>> m_cRoutes;
+    /// registered module -> event names it is routed for
+    QHash<GitlModuleDelegate*, QSet<QString>> m_cModuleRoutes;
 
 };
 

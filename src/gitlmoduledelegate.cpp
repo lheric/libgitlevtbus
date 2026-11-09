@@ -34,28 +34,43 @@ GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pc
         m_pcGitlEvtBus = GitlEventBus::getInstance();
     else
         m_pcGitlEvtBus = pcEventBus;
-    m_pcGitlEvtBus->registerModule(this);
+    m_pcGitlEvtBus->xRegister(this, QStringList());
     m_strModuleName = "undefined_module_name";
 }
 
-
+GitlModuleDelegate::~GitlModuleDelegate()
+{
+    detach();
+}
 
 void GitlModuleDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCallBack pfListener )
 {
     QMutexLocker cLocker(&m_cMutex);
     m_cListeningEvts.insert(strEvtName, pfListener);   ///< replaces any existing callback
+    if(!m_pcGitlEvtBus.isNull())
+        m_pcGitlEvtBus->xAddRoute(this, strEvtName);    ///< no-op if already routed
 }
 
 
 void GitlModuleDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 {
     QMutexLocker cLocker(&m_cMutex);
-    m_cListeningEvts.remove(strEvtName);
+    if(m_cListeningEvts.remove(strEvtName) > 0 && !m_pcGitlEvtBus.isNull())
+        m_pcGitlEvtBus->xRemoveRoute(this, strEvtName);
+}
+
+QStringList GitlModuleDelegate::xSubscribedEvtNames() const
+{
+    QMutexLocker cLocker(&m_cMutex);
+    return m_cListeningEvts.keys();
 }
 
 void GitlModuleDelegate::clearSubscriptions()
 {
     QMutexLocker cLocker(&m_cMutex);
+    if(!m_pcGitlEvtBus.isNull())
+        for(auto it = m_cListeningEvts.constBegin(); it != m_cListeningEvts.constEnd(); ++it)
+            m_pcGitlEvtBus->xRemoveRoute(this, it.key());
     m_cListeningEvts.clear();
 }
 
@@ -101,7 +116,7 @@ void GitlModuleDelegate::detach()
 {
     QMutexLocker cLocker(&m_cMutex);
     if(!m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->unregisterModule(this);
+        m_pcGitlEvtBus->xUnregister(this);
     m_pcGitlEvtBus.clear();
 }
 
@@ -111,7 +126,7 @@ void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
         return;
     QMutexLocker cLocker(&m_cMutex);
     if(!m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->unregisterModule(this);
+        m_pcGitlEvtBus->xUnregister(this);
     m_pcGitlEvtBus = pcEventBus;
-    m_pcGitlEvtBus->registerModule(this);
+    m_pcGitlEvtBus->xRegister(this, m_cListeningEvts.keys());   ///< carry the subscriptions over
 }

@@ -32,6 +32,7 @@
 #include <QMutexLocker>
 #include <QSharedPointer>
 #include <QPointer>
+#include <QStringList>
 #include <functional>
 #include "gitldef.h"
 #include "gitlevent.h"
@@ -50,13 +51,20 @@ class GitlModuleDelegate : public QObject
 {
     Q_OBJECT
     friend class GitlModule;
+    friend class GitlEventBus;
 private:
     explicit GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus *pcEventBus = nullptr);
 
     /// remove every subscription; used when the owning module is destroyed
     void clearSubscriptions();
 
+    /// names of the events this module is subscribed to
+    QStringList xSubscribedEvtNames() const;
+
 public:
+    /// unregisters from the bus, so the bus never routes to a destroyed module
+    ~GitlModuleDelegate() override;
+
     /*!
      * \brief subscribeToEvtByName listening to an event by name.
      *        A module holds at most one callback per event name: subscribing
@@ -117,7 +125,9 @@ private:
     QPointer<GitlEventBus> m_pcGitlEvtBus;
 
     /// guards m_cListeningEvts and m_pcGitlEvtBus, which may be touched from
-    /// a thread other than the one this object lives in
+    /// a thread other than the one this object lives in. Lock order: this mutex,
+    /// then the bus's route mutex; the bus never calls back into a module while
+    /// holding its own lock.
     mutable QMutex m_cMutex;
 
 };

@@ -482,6 +482,82 @@ private slots:
         QMetaObject::invokeMethod(&cContext, [&](){ delete pcModule; }, Qt::BlockingQueuedConnection);
     }
 
+    /// the public eventTriggered() signal still reports every posted event to
+    /// external listeners, including events nobody subscribed to
+    void eventTriggeredSignal()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QStringList vcSeen;
+        QObject::connect(pcBus, &GitlEventBus::eventTriggered,
+                         [&](QSharedPointer<GitlEvent> pcEvt){ vcSeen << pcEvt->getEvtName(); });
+
+        TestModule cModule(pcBus);
+        cModule.subscribeToEvtByName("TEST_EVENT_1", MAKE_CALLBACK_OBJ(cModule, TestModule::callback));
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        GitlEvent("NOBODY_LISTENS").dispatch(pcBus);
+        QVERIFY(cModule.getNotified());
+        QCOMPARE(vcSeen, QStringList() << "TEST_EVENT_1" << "NOBODY_LISTENS");
+    }
+
+    /// subscriptions made while detached are routed once the module is attached,
+    /// and a module that moves to another bus stops receiving from the old one
+    void subscribeWhileDetached()
+    {
+        GitlEventBus* pcBus1 = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus1);
+        GitlEventBus* pcBus2 = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus2);
+
+        int iCalls = 0;
+        GitlModule cModule(pcBus1);
+        cModule.detach();
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iCalls; return true; });
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus1);
+        QCOMPARE(iCalls, 0);
+
+        cModule.attach(pcBus1);
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus1);
+        QCOMPARE(iCalls, 1);
+
+        cModule.attach(pcBus2);
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus1);
+        QCOMPARE(iCalls, 1);
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus2);
+        QCOMPARE(iCalls, 2);
+
+        cModule.unsubscribeToEvtByName("TEST_EVENT_1");
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus2);
+        QCOMPARE(iCalls, 2);
+    }
+
+    /// a callback may delete another module that is later in the same delivery
+    void callbackDeletesOtherModule()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        int iFirst = 0, iSecond = 0;
+        GitlModule cFirst(pcBus);
+        GitlModule* pcSecond = new GitlModule(pcBus);
+        cFirst.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&)
+        {
+            ++iFirst;
+            delete pcSecond;
+            pcSecond = nullptr;
+            return true;
+        });
+        pcSecond->subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ ++iSecond; return true; });
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QCOMPARE(iFirst, 1);
+        QCOMPARE(iSecond, 0);
+        QVERIFY(pcSecond == nullptr);
+    }
+
     /// several modules, each on its own worker thread, receive every event exactly once
     /// on their own thread while several threads dispatch and (un)subscribe concurrently
     void multipleWorkers()

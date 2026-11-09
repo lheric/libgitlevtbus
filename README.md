@@ -54,6 +54,7 @@ Events can be dispatched from any thread. Where a callback runs depends on the r
 - **The receiving thread needs a running Qt event loop.** Queued events are delivered by that loop. A `QThread` runs one by default, but a module created on a `std::thread` or a thread without `exec()` silently never receives events from other threads.
 - **Callbacks receive `const GitlEvent&`.** Listeners on different threads share one copy of each event, so it must not be modified.
 - **Subscribing, unsubscribing, attaching and detaching are thread-safe.**
+- **An event only reaches modules that are subscribed when it's dispatched.** Modules that aren't subscribed to an event never see it, so they cost nothing. A module that unsubscribes before a queued event is delivered won't receive it.
 
 If your module class is also a `QObject`, then `moveToThread()` moves only the `QObject` part. Call `moveModuleToThread()` as well, so the callbacks move too:
 
