@@ -17,3 +17,6 @@
 
 # Build directories
 build/
+
+# MkDocs build output
+site/

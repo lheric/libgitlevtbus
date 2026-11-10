@@ -1,6 +1,9 @@
 Introduction
 =============
 [![CI](https://github.com/lheric/libgitlevtbus/actions/workflows/ci.yml/badge.svg)](https://github.com/lheric/libgitlevtbus/actions/workflows/ci.yml)
+[![Documentation](https://readthedocs.org/projects/libgitlevtbus/badge/?version=latest)](https://libgitlevtbus.readthedocs.io/)
+
+**Documentation and tutorials: https://libgitlevtbus.readthedocs.io/**
 
 libgitlevtbus is an open-source event bus (or message bus) based on Qt under BSD lisence.
 

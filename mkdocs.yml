@@ -1,0 +1,44 @@
+site_name: libgitlevtbus
+site_description: An event bus for Qt applications, with typed events and cross-thread delivery.
+repo_url: https://github.com/lheric/libgitlevtbus
+repo_name: lheric/libgitlevtbus
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Custom events: custom-events.md
+  - Sync and async dispatch: dispatch.md
+  - Threading: threading.md
+
+# files in docs/ that are not part of the website
+exclude_docs: |
+  IMPROVEMENTS.md
+  requirements.txt
