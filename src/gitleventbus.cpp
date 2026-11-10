@@ -25,9 +25,10 @@
  *******************************************************************************************/
 #include "gitleventbus.h"
 #include <QDebug>
-#include <QMetaMethod>
 #include <QPointer>
+#include <QSemaphore>
 #include <QThread>
+#include <memory>
 #include <typeinfo>
 
 /// needed for queued connections to eventTriggered() made by users
@@ -52,72 +53,70 @@ bool GitlEventBus::registerModule(GitlModuleDelegate* pcModule)
     if(pcModule == nullptr)
         return false;
     /// read the module's subscriptions before taking the bus lock (lock order: module -> bus)
-    xRegister(pcModule, pcModule->xSubscribedEvtNames());
+    xSetRoutes(pcModule, pcModule->xSubscribedEvtNames());
     return true;
 }
 
 bool GitlEventBus::unregisterModule(GitlModuleDelegate *pcModule)
 {
-    return xUnregister(pcModule);
+    return xSetRoutes(pcModule, QStringList());
 }
 
-void GitlEventBus::xRegister(GitlModuleDelegate *pcModule, const QStringList &rcEvtNames)
+bool GitlEventBus::xSetRoutes(GitlModuleDelegate *pcModule, const QStringList &rcEvtNames)
 {
     QMutexLocker cLocker(&m_cRouteMutex);
-    m_cModuleRoutes[pcModule];   ///< registered, even with no subscriptions yet
-    cLocker.unlock();
-    for(const QString& strEvtName : rcEvtNames)
-        xAddRoute(pcModule, strEvtName);
-}
-
-bool GitlEventBus::xUnregister(GitlModuleDelegate *pcModule)
-{
-    QMutexLocker cLocker(&m_cRouteMutex);
-    auto it = m_cModuleRoutes.find(pcModule);
-    if(it == m_cModuleRoutes.end())
-        return false;
-    for(const QString& strEvtName : it.value())
+    bool bHadRoutes = false;
+    /// drop the routes for events no longer subscribed; the others keep their order
+    for(auto it = m_cRoutes.begin(); it != m_cRoutes.end(); )
     {
-        auto r = m_cRoutes.find(strEvtName);
-        if(r == m_cRoutes.end())
-            continue;
-        r.value().removeAll(pcModule);
-        if(r.value().isEmpty())
-            m_cRoutes.erase(r);
+        if(it.value().contains(pcModule))
+        {
+            bHadRoutes = true;
+            if(!rcEvtNames.contains(it.key()))
+                it.value().removeAll(pcModule);
+        }
+        it = it.value().isEmpty() ? m_cRoutes.erase(it) : std::next(it);
     }
-    m_cModuleRoutes.erase(it);
-    return true;
-}
-
-void GitlEventBus::xAddRoute(GitlModuleDelegate *pcModule, const QString &strEvtName)
-{
-    QMutexLocker cLocker(&m_cRouteMutex);
-    auto it = m_cModuleRoutes.find(pcModule);
-    if(it == m_cModuleRoutes.end() || it.value().contains(strEvtName))
-        return;     ///< not registered, or already routed
-    it.value().insert(strEvtName);
-    m_cRoutes[strEvtName].append(pcModule);
-}
-
-void GitlEventBus::xRemoveRoute(GitlModuleDelegate *pcModule, const QString &strEvtName)
-{
-    QMutexLocker cLocker(&m_cRouteMutex);
-    auto it = m_cModuleRoutes.find(pcModule);
-    if(it == m_cModuleRoutes.end() || !it.value().remove(strEvtName))
-        return;
-    auto r = m_cRoutes.find(strEvtName);
-    if(r == m_cRoutes.end())
-        return;
-    r.value().removeAll(pcModule);
-    if(r.value().isEmpty())
-        m_cRoutes.erase(r);
+    /// add the missing ones at the end
+    for(const QString& strEvtName : rcEvtNames)
+    {
+        QVector<GitlModuleDelegate*>& vcModules = m_cRoutes[strEvtName];
+        if(!vcModules.contains(pcModule))
+            vcModules.append(pcModule);
+    }
+    return bHadRoutes;
 }
 
 
 /*! send event to event bus
   */
 void GitlEventBus::post(const GitlEvent& rcEvt) const
-{    
+{
+    QSharedPointer<GitlEvent> pcEvtCopy = xClone(rcEvt, "GitlEventBus::post");
+    if(pcEvtCopy.isNull())
+        return;
+    xRoute(pcEvtCopy, EventDeliveryMethod::Auto);
+}
+
+void GitlEventBus::postAsync(const GitlEvent& rcEvt) const
+{
+    QSharedPointer<GitlEvent> pcEvtCopy = xClone(rcEvt, "GitlEventBus::postAsync");
+    if(pcEvtCopy.isNull())
+        return;
+    xRoute(pcEvtCopy, EventDeliveryMethod::Async);
+}
+
+void GitlEventBus::postSync(const GitlEvent& rcEvt) const
+{
+    /// No copy: a non-owning pointer to the caller's object. This is safe because
+    /// xRoute() does not return until every listener is done with it, and listeners
+    /// only get const access.
+    QSharedPointer<GitlEvent> pcEvt(const_cast<GitlEvent*>(&rcEvt), [](GitlEvent*){});
+    xRoute(pcEvt, EventDeliveryMethod::Sync);
+}
+
+QSharedPointer<GitlEvent> GitlEventBus::xClone(const GitlEvent &rcEvt, const char *szCaller)
+{
     QSharedPointer<GitlEvent> pcEvtCopy( rcEvt.clone() );
 
     /// A subclass without CLONABLE(...) is sliced to its base class by clone(),
@@ -125,46 +124,68 @@ void GitlEventBus::post(const GitlEvent& rcEvt) const
     const GitlEvent& rcEvtCopy = *pcEvtCopy;
     if( typeid(rcEvtCopy) != typeid(rcEvt) )
     {
-        qCritical("GitlEventBus::post: event '%s' of type '%s' was cloned as '%s'. "
-                  "Add CLONABLE(...) to the event subclass. The event was not dispatched.",
-                  qPrintable(rcEvt.getEvtName()), typeid(rcEvt).name(), typeid(rcEvtCopy).name());
-        Q_ASSERT_X(false, "GitlEventBus::post", "event subclass is missing CLONABLE(...)");
-        return;
+        qCritical("%s: event '%s' of type '%s' was cloned as '%s'. "
+                  "Add CLONABLE(...) to the event subclass, or use a "
+                  "dispatch that does not copy (dispatchSync). The event was not dispatched.",
+                  szCaller, qPrintable(rcEvt.getEvtName()), typeid(rcEvt).name(), typeid(rcEvtCopy).name());
+        Q_ASSERT_X(false, szCaller, "event subclass is missing CLONABLE(...)");
+        return QSharedPointer<GitlEvent>();
     }
+    return pcEvtCopy;
+}
 
+void GitlEventBus::xRoute(const QSharedPointer<GitlEvent> &pcEvt, EventDeliveryMethod eDeliveryMethod) const
+{
     /// Notify only the modules subscribed to this event name.
-    /// Modules on other threads get the event queued to their own thread. This is
-    /// done while holding the lock: a module unregisters under the same lock before
-    /// it is destroyed, so it cannot disappear while we queue to it, and a queued
-    /// event is dropped by Qt if its receiver is destroyed before delivery.
-    /// Modules on this thread are called after the lock is released, so their
+    /// Queued deliveries are posted while holding the lock: a module unregisters
+    /// under the same lock before it is destroyed, so it cannot disappear while we
+    /// queue to it, and a queued call is dropped by Qt if its receiver is destroyed
+    /// before delivery.
+    /// Modules called directly are called after the lock is released, so their
     /// callbacks may subscribe, dispatch or delete modules; QPointer guards
     /// against a callback deleting a module that is later in the list.
     QVector<QPointer<GitlModuleDelegate>> vcDirect;
+    QSemaphore cSyncDone;
+    int iSyncPending = 0;
     {
         QMutexLocker cLocker(&m_cRouteMutex);
-        auto it = m_cRoutes.constFind(pcEvtCopy->getEvtName());
+        auto it = m_cRoutes.constFind(pcEvt->getEvtName());
         if(it != m_cRoutes.constEnd())
         {
             QThread* pcCurrent = QThread::currentThread();
             for(GitlModuleDelegate* pcModule : it.value())
             {
-                if(pcModule->thread() == pcCurrent)
+                if(eDeliveryMethod != EventDeliveryMethod::Async && pcModule->thread() == pcCurrent)
                     vcDirect.append(pcModule);
+                else if(eDeliveryMethod == EventDeliveryMethod::Sync)
+                {
+                    /// the queued call owns a releaser: the waiting sender is released
+                    /// after the listener ran, and also if Qt drops the call because
+                    /// the receiving module was destroyed first
+                    auto pcReleaser = std::make_shared<QSemaphoreReleaser>(cSyncDone);
+                    ++iSyncPending;
+                    QMetaObject::invokeMethod(pcModule, [pcModule, pcEvt, pcReleaser]()
+                                              { pcModule->detonate(pcEvt); },
+                                              Qt::QueuedConnection);
+                }
                 else
-                    QMetaObject::invokeMethod(pcModule, [pcModule, pcEvtCopy]()
-                                              { pcModule->detonate(pcEvtCopy); },
+                    QMetaObject::invokeMethod(pcModule, [pcModule, pcEvt]()
+                                              { pcModule->detonate(pcEvt); },
                                               Qt::QueuedConnection);
             }
         }
     }
     for(const QPointer<GitlModuleDelegate>& pcModule : vcDirect)
         if(!pcModule.isNull())
-            pcModule->detonate(pcEvtCopy);
+            pcModule->detonate(pcEvt);
+
+    if(eDeliveryMethod == EventDeliveryMethod::Sync)
+    {
+        cSyncDone.acquire(iSyncPending);   ///< wait for the listeners on other threads
+        return;                            ///< no eventTriggered: nothing may outlive this call
+    }
 
     /// only for external listeners (logging, debugging); modules do not connect to it
-    static const QMetaMethod cSignal = QMetaMethod::fromSignal(&GitlEventBus::eventTriggered);
-    if(isSignalConnected(cSignal))
-        emit eventTriggered(pcEvtCopy);
+    emit eventTriggered(pcEvt);
 }
 

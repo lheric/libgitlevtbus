@@ -62,3 +62,13 @@ void GitlEvent::dispatch(GitlEventBus* pcEventBus) const
     else
         pcEventBus->post(*this);
 }
+
+void GitlEvent::dispatchSync(GitlEventBus* pcEventBus) const
+{
+    (pcEventBus == nullptr ? GitlEventBus::getInstance() : pcEventBus)->postSync(*this);
+}
+
+void GitlEvent::dispatchAsync(GitlEventBus* pcEventBus) const
+{
+    (pcEventBus == nullptr ? GitlEventBus::getInstance() : pcEventBus)->postAsync(*this);
+}

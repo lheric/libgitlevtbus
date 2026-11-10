@@ -44,13 +44,31 @@ int main(int argc, char *argv[])
 }
 ```
 
+Sync and async dispatch
+=======================
+An event object, including a local variable, can be dispatched three ways. Each is available on the event (`cEvt.dispatchSync()`), on a module (`cModule.dispatchSync(cEvt)`) and on a bus (`pcBus->postSync(cEvt)`):
+
+| Call | Copies the event? | Needs `CLONABLE`? | Listeners on this thread | Listeners on other threads | Returns |
+|---|---|---|---|---|---|
+| `dispatchSync` | No | No | Run immediately | Run on their threads, in parallel | After **every** listener has finished |
+| `dispatchAsync` | Yes | Yes | Run later | Run later | Immediately |
+| `dispatch` / `dispatchEvt` (default) | Yes | Yes | Run immediately | Run later | After this thread's listeners |
+
+```c++
+PlayerJoined cEvt("alice");    // a local variable; no CLONABLE needed
+cModule.dispatchSync(cEvt);    // every listener, on every thread, has finished here
+```
+
+- **`dispatchSync` waits.** Listeners receive your object itself, not a copy, and the call waits until they're done with it. It blocks forever if a receiving thread has no running event loop, and it deadlocks if two threads `dispatchSync` to each other at the same time. If a receiving module is deleted before handling the event, it's skipped and the call still returns. The bus's debugging signal `eventTriggered` isn't emitted for it.
+- **`dispatchAsync` never runs a listener before it returns**, even on the same thread. That's useful to avoid nested dispatches. The calling thread needs a running event loop for its own listeners.
+
 Threading
 =========
 Events can be dispatched from any thread. Where a callback runs depends on the receiving module, not on the sender:
 
 - **Callbacks run on the thread the module lives in.** That's the thread that created the module, unless you move it with `moveModuleToThread()`.
 - **Same thread: delivered immediately.** If the event is dispatched on the module's own thread, the callback runs before `dispatch()` returns.
-- **Other thread: queued.** If the event is dispatched from a different thread, it's queued, and `dispatch()` returns before the callback runs.
+- **Other thread: queued.** If the event is dispatched from a different thread, it's queued, and `dispatch()` returns before the callback runs. To wait for it, or to queue even on the same thread, use `dispatchSync()` or `dispatchAsync()` (see above).
 - **The receiving thread needs a running Qt event loop.** Queued events are delivered by that loop. A `QThread` runs one by default, but a module created on a `std::thread` or a thread without `exec()` silently never receives events from other threads.
 - **Callbacks receive `const GitlEvent&`.** Listeners on different threads share one copy of each event, so it must not be modified.
 - **Subscribing, unsubscribing, attaching and detaching are thread-safe.**

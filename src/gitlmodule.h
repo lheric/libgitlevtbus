@@ -59,7 +59,7 @@ public:
     GitlModule(GitlEventBus* pcEventBus = nullptr);
 
     /*!
-     * \brief ~GitlModule Detaches from the bus and drops all subscriptions.
+     * \brief ~GitlModule Detaches from the bus.
      * Callbacks run on the thread the module lives in. If a subclass's
      * callbacks use its own members and the module can be destroyed from another
      * thread, call detach() at the start of the subclass destructor.
@@ -86,6 +86,29 @@ public:
      * \param rcEvt event
      */
     void dispatchEvt(const GitlEvent &rcEvt );
+
+    /*!
+     * \brief dispatchSync Deliver an event without copying it and wait until every
+     * listener, on every thread, has finished. The event subclass needs no
+     * CLONABLE, and the event may be a local variable:
+     * \code
+     * PlayerJoined cEvt("alice");
+     * cModule.dispatchSync(cEvt);   // all listeners are done when this returns
+     * \endcode
+     * Listeners on this thread run immediately; listeners on other threads run on
+     * their own threads, in parallel, while this call waits. It blocks forever if
+     * a receiving thread runs no event loop, and deadlocks if two threads
+     * dispatchSync() to each other at the same time.
+     */
+    void dispatchSync(const GitlEvent &rcEvt);
+
+    /*!
+     * \brief dispatchAsync Copy the event and return immediately. Every listener,
+     * including those on this thread, runs later from its thread's event loop,
+     * so this thread needs a running event loop too. The event is copied with
+     * clone(), so an event subclass needs CLONABLE.
+     */
+    void dispatchAsync(const GitlEvent &rcEvt);
 
     /*!
      * \brief setModuleName Set the name of this module. That's ok if you do not

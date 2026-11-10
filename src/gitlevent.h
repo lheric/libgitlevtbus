@@ -36,11 +36,12 @@ class GitlEventBus;
 
 /*!
  * \brief The GitlEvent class represents an event.
- *  If you want to create an custom event by inherit GitlEvent, you ***MUST***
- *  reimplement the 'clone' method in this class. This can be done by adding
- *  CLONABLE(subclassname) in the subclass. Otherwise the event is sliced when it
- *  is copied onto the bus; GitlEventBus::post() detects this, logs an error and
- *  drops the event (and asserts in debug builds).
+ *
+ *  Copying: dispatch(), dispatchAsync() and GitlEventBus::post()/postAsync()
+ *  copy the event onto the bus with clone(), so a subclass sent that way MUST
+ *  declare CLONABLE(subclassname). Otherwise the event
+ *  would be sliced; the bus detects this, logs an error and drops the event (and
+ *  asserts in debug builds). dispatchSync() does not copy and needs neither.
  *
  *  Listeners receive the event as const GitlEvent&. One copy is shared by all
  *  listeners, possibly on different threads, so it must not be modified.
@@ -85,6 +86,21 @@ public:
      */
     void dispatch(GitlEventBus *pcEventBus = NULL) const;
 
+    /*!
+     * \brief dispatchSync Deliver this event without copying it and wait until every
+     * listener (on every thread) has finished. Needs no CLONABLE; works with a local
+     * variable. See GitlEventBus::postSync() for the blocking caveats.
+     * \param pcEventBus the bus, or nullptr for the global one
+     */
+    void dispatchSync(GitlEventBus *pcEventBus = nullptr) const;
+
+    /*!
+     * \brief dispatchAsync Copy this event and return immediately; every listener,
+     * including those on this thread, runs later. Needs CLONABLE.
+     * \param pcEventBus the bus, or nullptr for the global one
+     */
+    void dispatchAsync(GitlEventBus *pcEventBus = nullptr) const;
+
 protected:    
 
     ADD_CLASS_FIELD(QString, strEvtName, getEvtName, setEvtName)            ///< event name
@@ -92,6 +108,8 @@ protected:
     ADD_CLASS_FIELD_NOSETTER(GitlEventParam, cParameters, getParameters)    ///< event parameters-value pair
 
 };
+
+
 
 
 #endif // GITLEVENT_H

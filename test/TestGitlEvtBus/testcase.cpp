@@ -81,6 +81,14 @@ public:
     ADD_CLASS_FIELD(QString, strCustomVar, getCustomVar, setCustomVar)
 };
 
+/// no CLONABLE: can only be sent with dispatchSync, which does not copy
+class NoCloneEvent : public GitlEvent
+{
+public:
+    explicit NoCloneEvent(int iValue) : GitlEvent("NO_CLONE_EVENT"), m_iValue(iValue) {}
+    int m_iValue;
+};
+
 class CustomEventListener : public GitlModule
 {
 public:
@@ -534,6 +542,25 @@ private slots:
         QCOMPARE(iCalls, 2);
     }
 
+    /// modules receive an event in the order they subscribed to it, and subscribing
+    /// to other events later does not change that order
+    void deliveryOrderIsStable()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QString strOrder;
+        GitlModule cFirst(pcBus), cSecond(pcBus);
+        cFirst .subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ strOrder += "1"; return true; });
+        cSecond.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent&){ strOrder += "2"; return true; });
+
+        cFirst.subscribeToEvtByName("OTHER_EVENT", [](const GitlEvent&){ return true; });
+        cFirst.unsubscribeToEvtByName("OTHER_EVENT");
+
+        GitlEvent("TEST_EVENT_1").dispatch(pcBus);
+        QCOMPARE(strOrder, QString("12"));
+    }
+
     /// a callback may delete another module that is later in the same delivery
     void callbackDeletesOtherModule()
     {
@@ -557,6 +584,168 @@ private slots:
         QCOMPARE(iSecond, 0);
         QVERIFY(pcSecond == nullptr);
     }
+
+
+
+
+
+
+
+    /// dispatchSync: a local event without CLONABLE reaches listeners on several
+    /// threads by reference, and all of them have finished when the call returns
+    void dispatchSyncCrossThread()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        const int iWorkers = 3;
+        std::vector<std::unique_ptr<QThread>>    vcThreads;
+        std::vector<std::unique_ptr<GitlModule>> vcModules;
+        auto cCleanup = MakeScopeExit([&]()
+        {
+            for(auto& m : vcModules) m->detach();
+            for(auto& t : vcThreads) { t->quit(); t->wait(); }
+            vcModules.clear();
+            vcThreads.clear();
+        });
+
+        NoCloneEvent cEvt(5);   ///< local, and no CLONABLE
+        std::atomic<int> iCalls(0), iWrongObject(0), iWrongThread(0), iSum(0);
+        auto fnListen = [&](GitlModule& rcModule, QThread* pcExpected)
+        {
+            rcModule.subscribeToEvtByName("NO_CLONE_EVENT", [&, pcExpected](const GitlEvent& rcEvt)
+            {
+                QThread::msleep(20);   ///< make sure the sender really waits
+                if(&rcEvt != &cEvt) ++iWrongObject;
+                if(QThread::currentThread() != pcExpected) ++iWrongThread;
+                iSum += static_cast<const NoCloneEvent&>(rcEvt).m_iValue;
+                ++iCalls;
+                return true;
+            });
+        };
+
+        GitlModule cLocal(pcBus);   ///< on this thread
+        fnListen(cLocal, QThread::currentThread());
+        for(int i = 0; i < iWorkers; ++i)
+        {
+            vcThreads.emplace_back(new QThread);
+            vcThreads.back()->start();
+            vcModules.emplace_back(new GitlModule(pcBus));
+            fnListen(*vcModules.back(), vcThreads.back().get());
+            vcModules.back()->moveModuleToThread(vcThreads.back().get());
+        }
+
+        int iTriggered = 0;
+        QObject::connect(pcBus, &GitlEventBus::eventTriggered, [&](QSharedPointer<GitlEvent>){ ++iTriggered; });
+
+        cLocal.dispatchSync(cEvt);
+        QCOMPARE(iCalls.load(), iWorkers + 1);       ///< no waiting needed: all done already
+        QCOMPARE(iSum.load(), 5 * (iWorkers + 1));
+        QCOMPARE(iWrongObject.load(), 0);            ///< everyone saw the caller's object, not a copy
+        QCOMPARE(iWrongThread.load(), 0);
+        QCOMPARE(iTriggered, 0);                     ///< nothing may keep a pointer to the local
+
+        cEvt.dispatchSync(pcBus);                    ///< the GitlEvent member works the same way
+        QCOMPARE(iCalls.load(), 2 * (iWorkers + 1));
+    }
+
+    /// dispatchSync returns even if a receiving module is deleted before it handles the event
+    void dispatchSyncReceiverDeleted()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+        auto cStop = MakeScopeExit([&](){ cThread.quit(); cThread.wait(); });
+
+        std::atomic<int> iCalls(0);
+        GitlModule* pcModule = new GitlModule(pcBus);
+        pcModule->subscribeToEvtByName("NO_CLONE_EVENT", [&](const GitlEvent&){ ++iCalls; return true; });
+        pcModule->moveModuleToThread(&cThread);
+
+        /// queued ahead of the delivery: the module is gone before the event is handled
+        QMetaObject::invokeMethod(&cContext, [&](){ QThread::msleep(50); delete pcModule; },
+                                  Qt::QueuedConnection);
+        NoCloneEvent cEvt(1);
+        cEvt.dispatchSync(pcBus);   ///< must not hang
+        QCOMPARE(iCalls.load(), 0);
+    }
+
+    /// a same-thread listener may dispatchSync again: it is called directly, no deadlock
+    void dispatchSyncNested()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iOuter = 0, iInner = 0, iInnerSeenByOuter = -1;
+        cModule.subscribeToEvtByName("OUTER", [&](const GitlEvent&)
+        {
+            ++iOuter;
+            GitlEvent cInner("INNER");
+            cModule.dispatchSync(cInner);
+            iInnerSeenByOuter = iInner;   ///< already handled when dispatchSync returned
+            return true;
+        });
+        cModule.subscribeToEvtByName("INNER", [&](const GitlEvent&){ ++iInner; return true; });
+
+        GitlEvent cOuter("OUTER");
+        cModule.dispatchSync(cOuter);
+        QCOMPARE(iOuter, 1);
+        QCOMPARE(iInner, 1);
+        QCOMPARE(iInnerSeenByOuter, 1);
+    }
+
+    /// dispatchAsync copies the event and queues it, even for a listener on the same thread
+    void dispatchAsyncIsQueued()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iCalls = 0;
+        QString strSeen;
+        cModule.subscribeToEvtByName("TEST_EVENT_1", [&](const GitlEvent& rcEvt)
+        {
+            ++iCalls;
+            strSeen = static_cast<const CustomEvent&>(rcEvt).getCustomVar();
+            return true;
+        });
+
+        CustomEvent cEvt("TEST_EVENT_1");          ///< has CLONABLE
+        cModule.dispatchAsync(cEvt);
+        QCOMPARE(iCalls, 0);                       ///< not yet: queued
+        cEvt.setCustomVar("changed after dispatch");
+        QTRY_COMPARE(iCalls, 1);
+        QCOMPARE(strSeen, QString("Custom String"));   ///< a copy taken at dispatch time
+
+        cEvt.dispatchAsync(pcBus);
+        QCOMPARE(iCalls, 1);
+        QTRY_COMPARE(iCalls, 2);
+    }
+
+
+#ifdef QT_NO_DEBUG
+    /// dispatchAsync copies, so an event without CLONABLE is rejected (debug builds assert)
+    void dispatchAsyncNeedsClone()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iCalls = 0;
+        cModule.subscribeToEvtByName("NO_CLONE_EVENT", [&](const GitlEvent&){ ++iCalls; return true; });
+
+        QTest::ignoreMessage(QtCriticalMsg, QRegularExpression("postAsync.*Add CLONABLE"));
+        NoCloneEvent cEvt(1);
+        cModule.dispatchAsync(cEvt);
+        QTest::qWait(20);
+        QCOMPARE(iCalls, 0);
+    }
+#endif
 
     /// several modules, each on its own worker thread, receive every event exactly once
     /// on their own thread while several threads dispatch and (un)subscribe concurrently

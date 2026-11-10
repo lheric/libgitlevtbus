@@ -34,7 +34,6 @@ GitlModuleDelegate::GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus* pc
         m_pcGitlEvtBus = GitlEventBus::getInstance();
     else
         m_pcGitlEvtBus = pcEventBus;
-    m_pcGitlEvtBus->xRegister(this, QStringList());
     m_strModuleName = "undefined_module_name";
 }
 
@@ -48,7 +47,7 @@ void GitlModuleDelegate::subscribeToEvtByName(const QString& strEvtName, GitlCal
     QMutexLocker cLocker(&m_cMutex);
     m_cListeningEvts.insert(strEvtName, pfListener);   ///< replaces any existing callback
     if(!m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->xAddRoute(this, strEvtName);    ///< no-op if already routed
+        m_pcGitlEvtBus->xSetRoutes(this, m_cListeningEvts.keys());
 }
 
 
@@ -56,22 +55,13 @@ void GitlModuleDelegate::unsubscribeToEvtByName( const QString& strEvtName )
 {
     QMutexLocker cLocker(&m_cMutex);
     if(m_cListeningEvts.remove(strEvtName) > 0 && !m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->xRemoveRoute(this, strEvtName);
+        m_pcGitlEvtBus->xSetRoutes(this, m_cListeningEvts.keys());
 }
 
 QStringList GitlModuleDelegate::xSubscribedEvtNames() const
 {
     QMutexLocker cLocker(&m_cMutex);
     return m_cListeningEvts.keys();
-}
-
-void GitlModuleDelegate::clearSubscriptions()
-{
-    QMutexLocker cLocker(&m_cMutex);
-    if(!m_pcGitlEvtBus.isNull())
-        for(auto it = m_cListeningEvts.constBegin(); it != m_cListeningEvts.constEnd(); ++it)
-            m_pcGitlEvtBus->xRemoveRoute(this, it.key());
-    m_cListeningEvts.clear();
 }
 
 bool GitlModuleDelegate::detonate(QSharedPointer<GitlEvent> pcEvt )
@@ -106,6 +96,20 @@ void GitlModuleDelegate::dispatchEvt( const GitlEvent& rcEvt ) const
         pcBus->post(rcEvt);
 }
 
+void GitlModuleDelegate::dispatchSyncEvt( const GitlEvent& rcEvt ) const
+{
+    GitlEventBus* pcBus = getGitlEvtBus();
+    if(pcBus != nullptr)    ///< never hold our lock while waiting for other threads
+        pcBus->postSync(rcEvt);
+}
+
+void GitlModuleDelegate::dispatchAsyncEvt( const GitlEvent& rcEvt ) const
+{
+    GitlEventBus* pcBus = getGitlEvtBus();
+    if(pcBus != nullptr)
+        pcBus->postAsync(rcEvt);
+}
+
 GitlEventBus* GitlModuleDelegate::getGitlEvtBus() const
 {
     QMutexLocker cLocker(&m_cMutex);
@@ -116,7 +120,7 @@ void GitlModuleDelegate::detach()
 {
     QMutexLocker cLocker(&m_cMutex);
     if(!m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->xUnregister(this);
+        m_pcGitlEvtBus->xSetRoutes(this, QStringList());
     m_pcGitlEvtBus.clear();
 }
 
@@ -126,7 +130,7 @@ void GitlModuleDelegate::attach(GitlEventBus *pcEventBus)
         return;
     QMutexLocker cLocker(&m_cMutex);
     if(!m_pcGitlEvtBus.isNull())
-        m_pcGitlEvtBus->xUnregister(this);
+        m_pcGitlEvtBus->xSetRoutes(this, QStringList());
     m_pcGitlEvtBus = pcEventBus;
-    m_pcGitlEvtBus->xRegister(this, m_cListeningEvts.keys());   ///< carry the subscriptions over
+    m_pcGitlEvtBus->xSetRoutes(this, m_cListeningEvts.keys());   ///< carry the subscriptions over
 }

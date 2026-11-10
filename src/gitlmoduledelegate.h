@@ -55,9 +55,6 @@ class GitlModuleDelegate : public QObject
 private:
     explicit GitlModuleDelegate(GitlModule *pcDelegator, GitlEventBus *pcEventBus = nullptr);
 
-    /// remove every subscription; used when the owning module is destroyed
-    void clearSubscriptions();
-
     /// names of the events this module is subscribed to
     QStringList xSubscribedEvtNames() const;
 
@@ -85,6 +82,12 @@ public:
      * \param pcEvt event
      */
     void dispatchEvt(const GitlEvent &rcEvt  ) const;
+
+    /// dispatch without copying and wait for every listener (GitlEventBus::postSync)
+    void dispatchSyncEvt(const GitlEvent &rcEvt) const;
+
+    /// copy and queue for every listener, then return (GitlEventBus::postAsync)
+    void dispatchAsyncEvt(const GitlEvent &rcEvt) const;
 
 
     /*!

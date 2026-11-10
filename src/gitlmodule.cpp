@@ -34,8 +34,7 @@ GitlModule::GitlModule(GitlEventBus *pcEventBus) :
 
 GitlModule::~GitlModule()
 {
-    m_cDelegate.detach();
-    m_cDelegate.clearSubscriptions();
+    /// the delegate detaches from the bus in its own destructor, right after this
 }
 
 void GitlModule::subscribeToEvtByName( const QString& strEvtName,
@@ -52,6 +51,16 @@ void GitlModule::unsubscribeToEvtByName( const QString& strEvtName )
 void GitlModule::dispatchEvt( const GitlEvent& rcEvt )
 {
     m_cDelegate.dispatchEvt(rcEvt);
+}
+
+void GitlModule::dispatchSync( const GitlEvent& rcEvt )
+{
+    m_cDelegate.dispatchSyncEvt(rcEvt);
+}
+
+void GitlModule::dispatchAsync( const GitlEvent& rcEvt )
+{
+    m_cDelegate.dispatchAsyncEvt(rcEvt);
 }
 
 void GitlModule::setModuleName( QString strModuleName )

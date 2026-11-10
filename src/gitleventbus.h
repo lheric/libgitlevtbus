@@ -28,7 +28,6 @@
 
 #include <QList>
 #include <QHash>
-#include <QSet>
 #include <QVector>
 #include <QStringList>
 #include <QObject>
@@ -78,19 +77,43 @@ public:
      * \brief unregisterModule disconncet a module from the event bus.
      * Used internally by GitlModule; prefer GitlModule::detach().
      * \param pcModule
-     * \return true if the module was registered
+     * \return true if the module was receiving any events from this bus
      */
     bool unregisterModule(GitlModuleDelegate *pcModule);
 
+    /*!
+     * \brief postSync Deliver an event without copying it, and wait until every
+     * listener has finished. Listeners on this thread run immediately; listeners
+     * on other threads run on their own threads (in parallel), and this call
+     * blocks until they are done. The event subclass needs no CLONABLE, and the
+     * event may be a local variable.
+     *
+     * Blocks forever if a receiving thread runs no event loop, and deadlocks if
+     * two threads postSync() to each other at the same time. If a receiving
+     * module is destroyed before handling the event, it is simply skipped.
+     * eventTriggered() is not emitted (there is no copy that could outlive the call).
+     */
+    void postSync(const GitlEvent &rcEvt) const;
+
+    /*!
+     * \brief postAsync Copy the event and return immediately; every listener,
+     * including those on this thread, is called later from its thread's event
+     * loop. The event is copied with clone(), so an event subclass must declare
+     * CLONABLE(...).
+     */
+    void postAsync(const GitlEvent &rcEvt) const;
+
 public slots:
-    /*! send event to event bus
+    /*! send event to event bus. Listeners on this thread run immediately, listeners
+     *  on other threads later. The event is copied with clone(), so an event
+     *  subclass must declare CLONABLE(...).
       */
     void post(const GitlEvent &rcEvt) const;
 
 signals:
-    /*! Emitted for every posted event, whatever its name. Modules do not use
-     *  this signal; it is only emitted when something else is connected to it,
-     *  e.g. for logging or debugging.
+    /*! Emitted for every event posted with post() or postAsync(), whatever its
+     *  name (not for postSync()). Modules do not use this signal; it is for
+     *  logging or debugging.
      */
     void eventTriggered( QSharedPointer<GitlEvent> pcEvt ) const;
 
@@ -99,21 +122,27 @@ signals:
     SINGLETON_PATTERN_DECLARE(GitlEventBus)
 
 private:
-    /// register a module together with the events it is already subscribed to
-    void xRegister(GitlModuleDelegate *pcModule, const QStringList &rcEvtNames);
-    /// remove a module and all its routes; true if it was registered
-    bool xUnregister(GitlModuleDelegate *pcModule);
-    /// a registered module subscribed to / unsubscribed from an event
-    void xAddRoute(GitlModuleDelegate *pcModule, const QString &strEvtName);
-    void xRemoveRoute(GitlModuleDelegate *pcModule, const QString &strEvtName);
+    /// how xRoute() delivers to modules
+    enum class EventDeliveryMethod
+    {
+        Auto,   ///< this thread: call now; other threads: queue
+        Sync,   ///< like Auto, then wait for the queued ones; no ownership taken
+        Async   ///< queue for every module, including those on this thread
+    };
+    /// deliver an event to the modules subscribed to its name
+    void xRoute(const QSharedPointer<GitlEvent> &pcEvt, EventDeliveryMethod eDeliveryMethod) const;
+    /// copy an event with clone(), or log and return null if it would be sliced
+    static QSharedPointer<GitlEvent> xClone(const GitlEvent &rcEvt, const char *szCaller);
 
-    /// guards the two indexes below; may be taken while a module's own mutex is
-    /// held (module -> bus), never the other way round
+    /// make pcModule's routes exactly rcEvtNames (empty: remove it from the bus),
+    /// keeping its place in the routes it already had; true if it had any routes
+    bool xSetRoutes(GitlModuleDelegate *pcModule, const QStringList &rcEvtNames);
+
+    /// guards m_cRoutes; may be taken while a module's own mutex is held
+    /// (module -> bus), never the other way round
     mutable QMutex m_cRouteMutex;
     /// event name -> subscribed modules, in subscription order
     QHash<QString, QVector<GitlModuleDelegate*>> m_cRoutes;
-    /// registered module -> event names it is routed for
-    QHash<GitlModuleDelegate*, QSet<QString>> m_cModuleRoutes;
 
 };
 
