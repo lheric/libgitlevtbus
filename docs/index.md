@@ -36,3 +36,12 @@ CI builds and tests Qt 5.15 and Qt 6 on Linux (GCC), macOS (Clang) and Windows (
 4. [Threading](threading.md): deliver events across threads.
 
 libgitlevtbus is open source under the BSD license. The source code is on [GitHub](https://github.com/lheric/libgitlevtbus).
+
+```{toctree}
+:hidden:
+
+getting-started
+custom-events
+dispatch
+threading
+```

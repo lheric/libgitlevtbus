@@ -6,8 +6,8 @@ build:
   tools:
     python: "3.12"
 
-mkdocs:
-  configuration: mkdocs.yml
+sphinx:
+  configuration: docs/conf.py
   fail_on_warning: true
 
 python:

@@ -19,11 +19,14 @@ Listeners receive your object itself, not a copy, and the call waits until they 
 
 If a receiving module is deleted before it handles the event, it's skipped, and the call still returns.
 
-!!! warning "dispatchSync can hang"
-    - It blocks forever if a receiving thread has no running Qt event loop.
-    - It deadlocks if two threads `dispatchSync` to each other at the same time, because each waits for the other.
+```{admonition} dispatchSync can hang
+:class: warning
 
-    If you don't need to wait, prefer `dispatch` or `dispatchAsync`.
+- It blocks forever if a receiving thread has no running Qt event loop.
+- It deadlocks if two threads `dispatchSync` to each other at the same time, because each waits for the other.
+
+If you don't need to wait, prefer `dispatch` or `dispatchAsync`.
+```
 
 The bus's debugging signal `eventTriggered` isn't emitted for `dispatchSync`, because no copy exists that could safely outlive the call.
 
