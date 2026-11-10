@@ -28,6 +28,7 @@
 #include <QString>
 #include <QMap>
 #include <QVariant>
+#include <type_traits>
 #include "gitldef.h"
 #include "gitleventparam.h"
 
@@ -37,9 +38,13 @@ class GitlEventBus;
 /*!
  * \brief The GitlEvent class represents an event.
  *
+ *  Custom events: derive from GitlEvent and add GITL_EVENT(YourEvent) to the
+ *  class. The event is then named after its class, and listeners can use the
+ *  typed API: GitlModule::subscribeToEvt<YourEvent>().
+ *
  *  Copying: dispatch(), dispatchAsync() and GitlEventBus::post()/postAsync()
  *  copy the event onto the bus with clone(), so a subclass sent that way MUST
- *  declare CLONABLE(subclassname). Otherwise the event
+ *  declare CLONABLE(subclassname) (GITL_EVENT includes it). Otherwise the event
  *  would be sliced; the bus detects this, logs an error and drops the event (and
  *  asserts in debug builds). dispatchSync() does not copy and needs neither.
  *
@@ -96,7 +101,7 @@ public:
 
     /*!
      * \brief dispatchAsync Copy this event and return immediately; every listener,
-     * including those on this thread, runs later. Needs CLONABLE.
+     * including those on this thread, runs later. Needs CLONABLE or GITL_EVENT.
      * \param pcEventBus the bus, or nullptr for the global one
      */
     void dispatchAsync(GitlEventBus *pcEventBus = nullptr) const;
@@ -110,6 +115,54 @@ protected:
 };
 
 
+/*!
+ * \brief GITL_EVENT Declare a typed event class. Put it first in the class body.
+ *
+ *  - names the event after the class: staticEvtName() returns "classname", and
+ *    every instance gets that name when it is constructed, so constructors do not
+ *    need to pass one to GitlEvent (a subclass with its own GITL_EVENT gets its own
+ *    name, since the most-derived class names the event last);
+ *  - provides clone(), so the event also works with dispatch() and post();
+ *  - marks the class for the typed API, which checks at compile time that the
+ *    exact class declares GITL_EVENT (a subclass that forgets it is rejected).
+ *
+ *  Like CLONABLE, it leaves the class in a public: section.
+ *
+ *  \code
+ *  class PlayerJoined : public GitlEvent
+ *  {
+ *      GITL_EVENT(PlayerJoined)
+ *  public:
+ *      explicit PlayerJoined(const QString& strName = QString()) { m_strName = strName; }
+ *      ADD_CLASS_FIELD(QString, strName, getName, setName)
+ *  };
+ *  \endcode
+ */
+#define GITL_EVENT(classname) \
+    private: \
+        GitlDetail::EvtNamer m_cGitlEvtNamer{this, staticEvtName()}; \
+    public: \
+        typedef classname GitlEvtSelf; \
+        static QString staticEvtName() { return QStringLiteral(#classname); } \
+        classname* clone() const override { return new classname(*this); }
+
+namespace GitlDetail
+{
+    /// used by GITL_EVENT: a member whose initializer sets the event's name. Members
+    /// are initialized after the base classes, so the most-derived class wins.
+    struct EvtNamer
+    {
+        EvtNamer(GitlEvent* pcEvt, const QString& strName) { pcEvt->setEvtName(strName); }
+    };
+
+    /// true if T declares GITL_EVENT(T) itself (not only inherited from a base)
+    template <typename T, typename = void>
+    struct IsTypedEvent : std::false_type {};
+
+    template <typename T>
+    struct IsTypedEvent<T, std::void_t<typename T::GitlEvtSelf>>
+        : std::is_same<typename T::GitlEvtSelf, T> {};
+}
 
 
 #endif // GITLEVENT_H

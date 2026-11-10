@@ -81,7 +81,24 @@ public:
     ADD_CLASS_FIELD(QString, strCustomVar, getCustomVar, setCustomVar)
 };
 
-/// no CLONABLE: can only be sent with dispatchSync, which does not copy
+/// typed event: named after its class; the constructor does not pass a name
+class PlayerJoined : public GitlEvent
+{
+    GITL_EVENT(PlayerJoined)
+public:
+    explicit PlayerJoined(const QString& strName = QString()) { m_strName = strName; }
+    ADD_CLASS_FIELD(QString, strName, getName, setName)
+};
+
+/// a subclass of a typed event with its own GITL_EVENT is a separate event
+class VipJoined : public PlayerJoined
+{
+    GITL_EVENT(VipJoined)
+public:
+    explicit VipJoined(const QString& strName = QString()) : PlayerJoined(strName) {}
+};
+
+/// no CLONABLE or GITL_EVENT: can only be sent with dispatchSync, which does not copy
 class NoCloneEvent : public GitlEvent
 {
 public:
@@ -585,11 +602,144 @@ private slots:
         QVERIFY(pcSecond == nullptr);
     }
 
+    /// typed subscribe: no name strings, no casts; listeners may return void;
+    /// works with every dispatch style
+    void typedSubscribeAndDispatch()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iCalls = 0;
+        QString strName, strEvtName;
+        cModule.subscribeToEvt<PlayerJoined>([&](const PlayerJoined& rcEvt)
+        {
+            ++iCalls;
+            strName = rcEvt.getName();
+            strEvtName = rcEvt.getEvtName();
+            return true;
+        });
+
+        cModule.dispatchEvt(PlayerJoined("alice"));
+        QCOMPARE(iCalls, 1);
+        QCOMPARE(strName, QString("alice"));
+        QCOMPARE(PlayerJoined::staticEvtName(), QString("PlayerJoined"));
+        QCOMPARE(strEvtName, PlayerJoined::staticEvtName());   ///< named although the constructor did not pass a name
+
+        strEvtName.clear();
+        cModule.dispatchSync(PlayerJoined("amy"));
+        QCOMPARE(iCalls, 2);
+        QCOMPARE(strName, QString("amy"));
+        QCOMPARE(strEvtName, PlayerJoined::staticEvtName());   ///< same name without a copy
+
+        cModule.dispatchAsync(PlayerJoined("ann"));
+        QCOMPARE(iCalls, 2);
+        QTRY_COMPARE(iCalls, 3);
+        QCOMPARE(strName, QString("ann"));
+
+        /// a void listener replaces the previous one
+        cModule.subscribeToEvt<PlayerJoined>([&](const PlayerJoined&){ iCalls += 10; });
+        pcBus->post(PlayerJoined("bob"));
+        QCOMPARE(iCalls, 13);
+
+        cModule.unsubscribeToEvt<PlayerJoined>();
+        pcBus->postSync(PlayerJoined("carol"));
+        QCOMPARE(iCalls, 13);
+    }
+
+    /// a typed event still works with the old API: dispatch() copies it via the
+    /// clone() that GITL_EVENT provides, and string subscribers receive it too
+    void typedEventWithOldApi()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        int iTyped = 0, iByName = 0;
+        QString strName;
+        GitlModule cTyped(pcBus), cByName(pcBus);
+        cTyped.subscribeToEvt<PlayerJoined>([&](const PlayerJoined& rcEvt){ ++iTyped; strName = rcEvt.getName(); });
+        cByName.subscribeToEvtByName("PlayerJoined", [&](const GitlEvent&){ ++iByName; return true; });
+
+        PlayerJoined cEvt("dave");
+        cEvt.dispatch(pcBus);
+        QCOMPARE(iTyped, 1);
+        QCOMPARE(iByName, 1);
+        QCOMPARE(strName, QString("dave"));
+        QCOMPARE(cEvt.getEvtName(), QString("PlayerJoined"));   ///< named at construction
+    }
+
+    /// an event with the typed name that is not of the typed class is skipped with a warning
+    void typedListenerSkipsWrongType()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iCalls = 0;
+        cModule.subscribeToEvt<PlayerJoined>([&](const PlayerJoined&){ ++iCalls; });
+
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression("is not a .*PlayerJoined.*skipped"));
+        GitlEvent("PlayerJoined").dispatch(pcBus);
+        QCOMPARE(iCalls, 0);
+    }
+
+    /// a subclass declaring its own GITL_EVENT is a different event
+    void typedSubclassIsSeparateEvent()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        int iPlayer = 0, iVip = 0;
+        cModule.subscribeToEvt<PlayerJoined>([&](const PlayerJoined&){ ++iPlayer; });
+        cModule.subscribeToEvt<VipJoined>([&](const VipJoined&){ ++iVip; });
+
+        cModule.dispatchSync(VipJoined("erin"));
+        QCOMPARE(iPlayer, 0);
+        QCOMPARE(iVip, 1);
+        cModule.dispatchSync(PlayerJoined("frank"));
+        QCOMPARE(iPlayer, 1);
+        QCOMPARE(iVip, 1);
+        QCOMPARE(VipJoined::staticEvtName(), QString("VipJoined"));
+        QCOMPARE(VipJoined("x").getEvtName(), QString("VipJoined"));     ///< the most-derived class names it
+        QCOMPARE(PlayerJoined("x").getEvtName(), QString("PlayerJoined"));
+        VipJoined cCopy(VipJoined("y"));
+        QCOMPARE(cCopy.getEvtName(), QString("VipJoined"));                ///< copies keep the name
+    }
 
 
+    /// typed events cross threads like any other: delivered on the module's thread
+    void typedCrossThread()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
 
+        QThread cThread;
+        QObject cContext;
+        cContext.moveToThread(&cThread);
+        cThread.start();
+        auto cStop = MakeScopeExit([&](){ cThread.quit(); cThread.wait(); });
 
+        std::atomic<QThread*> pcCallbackThread(nullptr);
+        std::atomic<int> iCalls(0);
+        QString strName;            ///< written on the worker, read after the blocking flush below
+        GitlModule* pcModule = new GitlModule(pcBus);
+        pcModule->subscribeToEvt<PlayerJoined>([&](const PlayerJoined& rcEvt)
+        {
+            strName = rcEvt.getName();
+            pcCallbackThread = QThread::currentThread();
+            ++iCalls;
+        });
+        pcModule->moveModuleToThread(&cThread);
 
+        pcBus->post(PlayerJoined("grace"));
+        QTRY_COMPARE(iCalls.load(), 1);
+        QMetaObject::invokeMethod(&cContext, [](){}, Qt::BlockingQueuedConnection);
+        QVERIFY(pcCallbackThread.load() == &cThread);
+        QCOMPARE(strName, QString("grace"));
+
+        QMetaObject::invokeMethod(&cContext, [&](){ delete pcModule; }, Qt::BlockingQueuedConnection);
+    }
 
     /// dispatchSync: a local event without CLONABLE reaches listeners on several
     /// threads by reference, and all of them have finished when the call returns
@@ -727,6 +877,21 @@ private slots:
         QTRY_COMPARE(iCalls, 2);
     }
 
+    /// a typed event sent with dispatchSync carries its class name, like with the copying dispatches
+    void dispatchSyncTypedEvent()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+        GitlModule cModule(pcBus);
+
+        QString strName;
+        cModule.subscribeToEvt<PlayerJoined>([&](const PlayerJoined& rcEvt){ strName = rcEvt.getName(); });
+
+        PlayerJoined cEvt("heidi");
+        cEvt.dispatchSync(pcBus);
+        QCOMPARE(strName, QString("heidi"));
+        QCOMPARE(cEvt.getEvtName(), QString("PlayerJoined"));
+    }
 
 #ifdef QT_NO_DEBUG
     /// dispatchAsync copies, so an event without CLONABLE is rejected (debug builds assert)

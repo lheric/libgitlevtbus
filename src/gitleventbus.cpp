@@ -125,7 +125,7 @@ QSharedPointer<GitlEvent> GitlEventBus::xClone(const GitlEvent &rcEvt, const cha
     if( typeid(rcEvtCopy) != typeid(rcEvt) )
     {
         qCritical("%s: event '%s' of type '%s' was cloned as '%s'. "
-                  "Add CLONABLE(...) to the event subclass, or use a "
+                  "Add CLONABLE(...) or GITL_EVENT(...) to the event subclass, or use a "
                   "dispatch that does not copy (dispatchSync). The event was not dispatched.",
                   szCaller, qPrintable(rcEvt.getEvtName()), typeid(rcEvt).name(), typeid(rcEvtCopy).name());
         Q_ASSERT_X(false, szCaller, "event subclass is missing CLONABLE(...)");

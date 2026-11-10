@@ -99,14 +99,14 @@ public:
      * \brief postAsync Copy the event and return immediately; every listener,
      * including those on this thread, is called later from its thread's event
      * loop. The event is copied with clone(), so an event subclass must declare
-     * CLONABLE(...).
+     * CLONABLE(...) or GITL_EVENT(...).
      */
     void postAsync(const GitlEvent &rcEvt) const;
 
 public slots:
     /*! send event to event bus. Listeners on this thread run immediately, listeners
      *  on other threads later. The event is copied with clone(), so an event
-     *  subclass must declare CLONABLE(...).
+     *  subclass must declare CLONABLE(...) or GITL_EVENT(...).
       */
     void post(const GitlEvent &rcEvt) const;
 

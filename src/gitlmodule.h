@@ -29,6 +29,9 @@
 #include <QVector>
 #include <QString>
 #include <QSharedPointer>
+#include <QtGlobal>
+#include <type_traits>
+#include <typeinfo>
 
 #include "gitldef.h"
 #include "gitlevent.h"
@@ -106,9 +109,53 @@ public:
      * \brief dispatchAsync Copy the event and return immediately. Every listener,
      * including those on this thread, runs later from its thread's event loop,
      * so this thread needs a running event loop too. The event is copied with
-     * clone(), so an event subclass needs CLONABLE.
+     * clone(), so an event subclass needs CLONABLE or GITL_EVENT.
      */
     void dispatchAsync(const GitlEvent &rcEvt);
+
+    /*!
+     * \brief subscribeToEvt Subscribe to a typed event (one declaring GITL_EVENT).
+     * The listener receives the event as const EvtT&; its return value, if any, is ignored.
+     * Shares the per-name slot with subscribeToEvtByName(EvtT::staticEvtName(), ...):
+     * subscribing either way replaces the other. An event with this name that is not
+     * an EvtT (e.g. a plain GitlEvent) is skipped with a warning.
+     * \code
+     * cModule.subscribeToEvt<PlayerJoined>([](const PlayerJoined& rcEvt)
+     * {
+     *     qDebug() << rcEvt.getName() << "joined";
+     * });
+     * \endcode
+     */
+    template <typename EvtT, typename F>
+    void subscribeToEvt(F pfListener)
+    {
+        static_assert(GitlDetail::IsTypedEvent<EvtT>::value,
+                      "EvtT must declare GITL_EVENT(EvtT) in its own class body");
+        subscribeToEvtByName(EvtT::staticEvtName(),
+            [pfListener](const GitlEvent& rcEvt) mutable -> bool
+            {
+                const EvtT* pcEvt = dynamic_cast<const EvtT*>(&rcEvt);
+                if(pcEvt == nullptr)
+                {
+                    qWarning("GitlModule::subscribeToEvt: event '%s' of type '%s' is not a '%s'; skipped.",
+                             qPrintable(rcEvt.getEvtName()), typeid(rcEvt).name(), typeid(EvtT).name());
+                    return false;
+                }
+                pfListener(*pcEvt);   ///< any return value is ignored, as for all callbacks
+                return true;
+            });
+    }
+
+    /*!
+     * \brief unsubscribeToEvt Unsubscribe from a typed event
+     */
+    template <typename EvtT>
+    void unsubscribeToEvt()
+    {
+        static_assert(GitlDetail::IsTypedEvent<EvtT>::value,
+                      "EvtT must declare GITL_EVENT(EvtT) in its own class body");
+        unsubscribeToEvtByName(EvtT::staticEvtName());
+    }
 
     /*!
      * \brief setModuleName Set the name of this module. That's ok if you do not

@@ -44,11 +44,43 @@ int main(int argc, char *argv[])
 }
 ```
 
+Custom events
+=============
+To send your own data, derive from `GitlEvent` and add `GITL_EVENT(YourEvent)` as the first line of the class:
+
+```c++
+class PlayerJoined : public GitlEvent
+{
+    GITL_EVENT(PlayerJoined)
+public:
+    explicit PlayerJoined(const QString& strName = QString()) { m_strName = strName; }
+    ADD_CLASS_FIELD(QString, strName, getName, setName)
+};
+
+// receive: no event-name string, no cast
+cModule.subscribeToEvt<PlayerJoined>([](const PlayerJoined& rcEvt)
+{
+    qDebug() << rcEvt.getName() << "joined";
+});
+
+// send: any dispatch style works (see "Sync and async dispatch" below)
+PlayerJoined cEvt("alice");
+cModule.dispatchSync(cEvt);
+```
+
+- **The event is named after its class** (`PlayerJoined::staticEvtName()` is `"PlayerJoined"`), so there's no name string to mistype. Constructors don't need to pass a name.
+- **Mistakes are caught at compile time.** Using a class without its own `GITL_EVENT` in the typed API is a compile error, including a subclass that forgets it.
+- **A subclass with its own `GITL_EVENT` is a separate event:** subscribers to `PlayerJoined` don't receive `VipJoined`.
+- **Listeners don't need to return anything.** Use `unsubscribeToEvt<PlayerJoined>()` to stop listening.
+- **Wrong types are skipped.** An event that has the name `"PlayerJoined"` but isn't a `PlayerJoined`, such as a plain `GitlEvent`, is skipped with a warning.
+
+**Older style, still supported:** `subscribeToEvtByName()` with a name string, and `dispatch()` / `dispatchEvt()` with an event object. These copy the event, so an event subclass sent this way must declare `CLONABLE(YourEvent)` (`GITL_EVENT` includes it). If it's missing, the event is dropped with an error at run time. `dispatchSync()` doesn't copy and needs neither (see below). Plain `GitlEvent`s carrying data in parameters (`setParameter()`) need neither macro.
+
 Sync and async dispatch
 =======================
 An event object, including a local variable, can be dispatched three ways. Each is available on the event (`cEvt.dispatchSync()`), on a module (`cModule.dispatchSync(cEvt)`) and on a bus (`pcBus->postSync(cEvt)`):
 
-| Call | Copies the event? | Needs `CLONABLE`? | Listeners on this thread | Listeners on other threads | Returns |
+| Call | Copies the event? | Needs `CLONABLE` / `GITL_EVENT`? | Listeners on this thread | Listeners on other threads | Returns |
 |---|---|---|---|---|---|
 | `dispatchSync` | No | No | Run immediately | Run on their threads, in parallel | After **every** listener has finished |
 | `dispatchAsync` | Yes | Yes | Run later | Run later | Immediately |
