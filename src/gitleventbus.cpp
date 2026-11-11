@@ -147,6 +147,9 @@ void GitlEventBus::xRoute(const QSharedPointer<GitlEvent> &pcEvt, EventDeliveryM
     QVector<QPointer<GitlModuleDelegate>> vcDirect;
     QSemaphore cSyncDone;
     int iSyncPending = 0;
+    /// Sync: wait for the listeners on other threads before returning, also when
+    /// a direct listener throws, because they still use the caller's event
+    auto cWaitSync = MakeScopeExit([&](){ cSyncDone.acquire(iSyncPending); });
     {
         QMutexLocker cLocker(&m_cRouteMutex);
         auto it = m_cRoutes.constFind(pcEvt->getEvtName());
@@ -180,10 +183,7 @@ void GitlEventBus::xRoute(const QSharedPointer<GitlEvent> &pcEvt, EventDeliveryM
             pcModule->detonate(pcEvt);
 
     if(eDeliveryMethod == EventDeliveryMethod::Sync)
-    {
-        cSyncDone.acquire(iSyncPending);   ///< wait for the listeners on other threads
-        return;                            ///< no eventTriggered: nothing may outlive this call
-    }
+        return;   ///< no eventTriggered: nothing may outlive this call
 
     /// only for external listeners (logging, debugging); modules do not connect to it
     emit eventTriggered(pcEvt);

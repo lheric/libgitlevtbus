@@ -824,6 +824,50 @@ private slots:
         QCOMPARE(iCalls.load(), 0);
     }
 
+    /// if a same-thread listener throws, dispatchSync still waits for the other threads,
+    /// which use the caller's event, before the exception reaches the caller (issue #2)
+    void dispatchSyncWaitsWhenListenerThrows()
+    {
+        GitlEventBus* pcBus = GitlEventBus::create();
+        SCOPE_EXIT(delete pcBus);
+
+        QThread cThread;
+        cThread.start();
+        auto cStop = MakeScopeExit([&](){ cThread.quit(); cThread.wait(); });
+
+        struct ListenerFailure {};
+        QSemaphore cEntered;
+        std::atomic<bool> bRemoteDone(false);
+        GitlModule cLocal(pcBus), cRemote(pcBus);
+        cRemote.subscribeToEvtByName("NO_CLONE_EVENT", [&](const GitlEvent&)
+        {
+            cEntered.release();
+            QThread::msleep(100);
+            bRemoteDone = true;
+            return true;
+        });
+        cRemote.moveModuleToThread(&cThread);
+        cLocal.subscribeToEvtByName("NO_CLONE_EVENT", [&](const GitlEvent&) -> bool
+        {
+            cEntered.acquire();   ///< the remote listener is running
+            throw ListenerFailure();
+        });
+
+        bool bThrown = false, bDoneWhenCaught = false;
+        try
+        {
+            NoCloneEvent cEvt(1);
+            cEvt.dispatchSync(pcBus);
+        }
+        catch(const ListenerFailure&)
+        {
+            bThrown = true;
+            bDoneWhenCaught = bRemoteDone;
+        }
+        QVERIFY(bThrown);
+        QVERIFY(bDoneWhenCaught);
+    }
+
     /// a same-thread listener may dispatchSync again: it is called directly, no deadlock
     void dispatchSyncNested()
     {
